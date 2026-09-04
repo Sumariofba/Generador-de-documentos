@@ -802,7 +802,13 @@
         }
 
         function downloadWordDocument() {
-            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = window.docx;
+            const docxLib = window.docx;
+            if (!docxLib) {
+                alert("La librería docx aún se está cargando. Por favor, reintente en unos segundos.");
+                return;
+            }
+
+            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = docxLib;
             const cd = appState.carga_datos;
             const tabKey = appState.currentTab;
 
@@ -880,7 +886,7 @@
                     properties: { page: { size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips } } },
                     children: [
                         new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { line: 360, after: 100 }, children: [new TextRun({ text: `Corresponde a Exp. ${cd.caratula_isa || 'ISA 21100-085949, DN154728'}`, bold: true, size: 22, font: "Arial" })] }),
-                        new Paragraph({ alignment: AlignmentType.LEFT, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(fechaEncabezadoDepHtml, window.docx) }),
+                        new Paragraph({ alignment: AlignmentType.LEFT, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(fechaEncabezadoDepHtml, docxLib) }),
                         new Paragraph({
                             alignment: AlignmentType.JUSTIFY,
                             indent: { firstLine: Math.round(1.25 * 566.929) },
@@ -920,7 +926,7 @@
                         new Paragraph({ spacing: { line: 360, before: 600, after: 300 }, children: [new TextRun({ text: "SEÑOR INSTRUCTOR:", bold: true, font: "Arial", size: 22 })] }),
                         new Paragraph({ indent: { firstLine: Math.round(1.5 * 566.929) }, spacing: { line: 360, after: 300 }, children: [new TextRun({ text: "Tomo conocimiento y daré estricto cumplimiento a lo ordenado por usted.", font: "Arial", size: 22 })] }),
                         new Paragraph({ spacing: { line: 360, after: 300 }, children: [new TextRun({ text: "CONSTE.", bold: true, font: "Arial", size: 22 })] }),
-                        new Paragraph({ spacing: { line: 360 }, children: createWordRunsFromHtml(fechaEncabezadoDepHtml, window.docx) })
+                        new Paragraph({ spacing: { line: 360 }, children: createWordRunsFromHtml(fechaEncabezadoDepHtml, docxLib) })
                     ]
                 });
             } else {
@@ -932,26 +938,26 @@
 
                 const mainPars = [
                     new Paragraph({ alignment: AlignmentType.LEFT, indent: { left: mitadPaginaTwips }, spacing: { line: 360 }, children: [new TextRun({ text: "REF.: ", bold: true, font: "Arial", size: 22 }), new TextRun({ text: refTitle, font: "Arial", size: 22 })] }),
-                    new Paragraph({ alignment: AlignmentType.LEFT, indent: { left: mitadPaginaTwips }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(fechaEncabezadoLugarHtml, window.docx) })
+                    new Paragraph({ alignment: AlignmentType.LEFT, indent: { left: mitadPaginaTwips }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(fechaEncabezadoLugarHtml, docxLib) })
                 ];
 
                 if (tabKey === 'col_div') {
                     mainPars.push(new Paragraph({ spacing: { line: 360, after: 300 }, children: [new TextRun({ text: `AL SEÑOR JEFE\n${cd.dirigida_a || 'DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)'}\nSUBSECCION PERSONAL`, bold: true, font: "Arial", size: 22 })] }));
                     
                     const p1Text = `Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.caratula_isa} en trámite ante ${cd.intervencion}, por el hecho ocurrido en fecha ${fechaHechoHtml}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:`;
-                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(p1Text, window.docx) }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(p1Text, docxLib) }));
                     
                     appState.puntosSeleccionadosIndices.forEach((rawIdx, listIdx) => {
                         const raw = listaOpcionesDesplegableRaw[rawIdx];
                         const pointFormattedHtml = `${listIdx + 1}. ${formatPointText(raw, true)}`;
-                        mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: createWordRunsFromHtml(pointFormattedHtml, window.docx) }));
+                        mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: createWordRunsFromHtml(pointFormattedHtml, docxLib) }));
                     });
                 } else if (tabKey === 'col_existencia_ipp') {
                     mainPars.push(new Paragraph({ spacing: { line: 360, after: 300 }, children: [new TextRun({ text: `AL SEÑOR AGENTE FISCAL\n${cd.nombre_mesa || 'FISCALIA GENERAL DE ENTRADAS'}\nDEPARTAMENTO JUDICIAL ${cd.dpto_judicial || 'MORON'}`, bold: true, font: "Arial", size: 22 })] }));
                     mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.caratula_isa} en trámite ante ${cd.intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:`, font: "Arial", size: 22 })] }));
                     
                     const pItem1 = `1. Si existe registro de algún Proceso Penal en trámite donde resulte denunciado el ${cd.causante_nombre}, edad: ${cd.causante_edad}, Documento Nacional de Identidad N°: ${cd.causante_dni} en la víspera del ${fechaHechoHtml} o posteriores, en la arteria ${domicilioCausante}.`;
-                    mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: createWordRunsFromHtml(pItem1, window.docx) }));
+                    mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: createWordRunsFromHtml(pItem1, docxLib) }));
                     mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "2. Asimismo solicito informe la existencia de denuncias de igual tenor con respecto a Infracción con la Ley 12569.", font: "Arial", size: 22 })] }));
                     mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "En caso de ser positivo solicito informe número de causa, carátula, estado actual de la misma y temperamento tomado para con el personal policial involucrado. Encarezco el resultado TÉRMINO MUY URGENTE en virtud fenecer los términos otorgados por la Superioridad y son vitales para la resolución administrativa del causante. Sirva adelantar el resultado a este mismo correo electrónico.", font: "Arial", size: 22 })] }));
                 } else if (tabKey === 'star_existencia_cautelares') {
@@ -959,7 +965,7 @@
                     mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.caratula_isa} en trámite ante ${cd.intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:`, font: "Arial", size: 22 })] }));
                     
                     const pItem1 = `1. Si existe registro de algún Proceso Penal en trámite que tenga vinculación, donde resulte denunciado el ${cd.causante_nombre}, edad: ${cd.causante_edad}, Documento Nacional de Identidad N°: ${cd.causante_dni} en la víspera del ${fechaHechoHtml} o posteriores, en la arteria ${domicilioCausante}.`;
-                    mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: createWordRunsFromHtml(pItem1, window.docx) }));
+                    mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: createWordRunsFromHtml(pItem1, docxLib) }));
                     mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "2. Asimismo solicito informe la existencia de denuncias de igual tenor con respecto a Infracción con la Ley 12569.", font: "Arial", size: 22 })] }));
                     mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "En caso de ser positivo solicito informe número de causa, carátula, estado actual de la misma y temperamento tomado para con el personal policial involucrado. Encarezco el resultado TÉRMINO MUY URGENTE.", font: "Arial", size: 22 })] }));
                 } else if (tabKey === 'col_cria_myf') {
@@ -968,7 +974,7 @@
                     mainPars.push(new Paragraph({ indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Nombre: ${cd.victima_nombre}, edad: ${cd.victima_edad}, Documento Nacional de Identidad N°: ${cd.victima_dni}, domicilio en: ${cd.victima_domicilio}, teléfono de contacto: ${cd.victima_contacto}.`, bold: true, font: "Arial", size: 22 })] }));
                     mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "Que deberán ser comunicados en un plazo máximo de diez (10) días corridos, contados a partir del presente requerimiento, con copia a la Dirección Provincial de Políticas de Género y Derechos Humanos en los casos en que la PSVG/F sea personal policial.", font: "Arial", size: 22 })] }));
                     mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Para mayor ilustración, se hace saber la síntesis del hecho descripto en la denuncia: ${cd.sintesis_relato}`, font: "Arial", size: 22 })] }));
-                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "Asimismo Informe la existencia de denuncias anteriores con idéntica temática ante Comisaría MYF de jurisdicción. En caso de ser afirmativo aportar número de denuncia, número de Expediente GDEBA generado a raíz de cada uno de los hechos.", font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "Asimismo Informe la existencia de denuncias anteriores con idéntica temática ante Comisaría MYF de jurisdicción. En case de ser afirmativo aportar número de denuncia, número de Expediente GDEBA generado a raíz de cada uno de los hechos.", font: "Arial", size: 22 })] }));
                 } else if (tabKey === 'star_inf_anmac_repar') {
                     mainPars.push(new Paragraph({ spacing: { line: 360, after: 300 }, children: [new TextRun({ text: "AL SEÑOR DIRECTOR\nREGISTRO PROVINCIAL DE ARMAS (R.E.P.A.R.)\nS / D", bold: true, font: "Arial", size: 22 })] }));
                     mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Me dirijo a usted en el marco de las Actuaciones Sumariales Administrativas correspondientes al Expediente ${cd.caratula_isa}, en trámite ante el ${cd.intervencion}, a fin de solicitarle tenga a bien disponer las medidas necesarias para informar a esta Instrucción:`, font: "Arial", size: 22 })] }));
