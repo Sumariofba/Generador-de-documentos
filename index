@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador Automático de Notas Sumariales PAR</title>
+    <!-- Librerías para exportación a Word (.docx) -->
+    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --bg-body: #f8fafc;
+            --sidebar-bg: #0f172a;
+            --sidebar-hover: #1e293b;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --text-dark: #334155;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            font-family: Arial, sans-serif !important; 
+        }
+        
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background-color: var(--bg-body); 
+            color: var(--text-dark); 
+            display: flex; 
+            flex-direction: column;
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* BARRA SUPERIOR DE NAVEGACIÓN */
+        .top-navbar {
+            background-color: var(--sidebar-bg);
+            display: flex;
+            align-items: center;
+            overflow-x: auto;
+            border-bottom: 2px solid var(--primary);
+            flex-shrink: 0;
+            padding: 0 10px;
+        }
+
+        .top-navbar-title {
+            color: #fff;
+            font-weight: bold;
+            font-size: 0.9rem;
+            padding: 10px 15px;
+            background: var(--primary);
+            white-space: nowrap;
+        }
+
+        .nav-list-top {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: row;
+        }
+
+        .nav-item-top {
+            padding: 12px 14px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            color: #94a3b8;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            border-right: 1px solid #1e293b;
+        }
+
+        .nav-item-top:hover { background-color: var(--sidebar-hover); color: #ffffff; }
+        .nav-item-top.active { background-color: var(--primary); color: #ffffff; font-weight: 600; }
+
+        /* CONTENEDOR PRINCIPAL DOS COLUMNAS */
+        .app-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* COLUMNA IZQUIERDA: FORMULARIO CARGA DE DATOS */
+        .left-sidebar-form {
+            width: 420px;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-form-header {
+            padding: 14px 18px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            background-color: var(--primary-dark);
+            color: #fff;
+        }
+
+        .sidebar-form-content {
+            padding: 16px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* PANEL DERECHO: VISTA PREVIA DEL DOCUMENTO */
+        .main-panel { 
+            flex: 1; 
+            padding: 20px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            background: var(--bg-body);
+        }
+
+        .card { background: var(--card-bg); border-radius: 10px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .card-title { font-size: 1rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 14px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Formulario y Grids */
+        .form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
+        
+        input, select, textarea { 
+            padding: 8px 10px; 
+            border: 1px solid var(--border); 
+            border-radius: 6px; 
+            font-size: 0.85rem; 
+            outline: none; 
+            background: #fff; 
+            width: 100%;
+        }
+        input:focus, select:focus, textarea:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); 
+        }
+
+        /* Botones y Acciones */
+        .actions-bar { display: flex; gap: 12px; justify-content: flex-end; }
+        .btn { border: none; padding: 10px 18px; border-radius: 6px; font-size: 0.88rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background 0.2s; white-space: nowrap; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-print { background-color: #475569; color: white; }
+        .btn-print:hover { background-color: #334155; }
+        .btn-add { background-color: #10b981; color: white; flex-shrink: 0; }
+        .btn-danger { background-color: #ef4444; color: white; padding: 4px 8px; font-size: 0.78rem; border-radius: 4px; border: none; cursor: pointer; }
+
+        .dropdown-container { display: flex; gap: 10px; margin-bottom: 12px; width: 100%; align-items: center; }
+        .dropdown-container select { flex: 1; }
+
+        .selected-list { list-style: none; padding: 0; margin-top: 12px; }
+        .selected-list li { background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+
+        /* Vista Previa Documento (A4) */
+        .doc-preview-wrapper { background: #64748b; padding: 25px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 20px; overflow-x: auto; }
+        .a4-page {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            padding-top: 2.5cm;
+            padding-bottom: 2.5cm;
+            padding-left: 4cm;
+            padding-right: 1.5cm;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #000;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .a4-page.caratula-page {
+            line-height: 1.35;
+        }
+
+        .doc-header-logo { text-align: left; margin-bottom: 0.3cm; }
+        .doc-header-logo img { max-height: 65px; width: auto; object-fit: contain; }
+        .doc-mid-section { margin-left: 40%; width: 60%; margin-bottom: 1.2em; }
+        .doc-addressee { font-weight: bold; margin-bottom: 1.2em; text-transform: uppercase; }
+        .doc-body p { text-indent: 1.25cm; margin-bottom: 1em; text-align: justify; }
+        .doc-body ol { padding-left: 1.25cm; margin-bottom: 1em; }
+        .doc-body li { margin-bottom: 0.5em; text-align: justify; }
+
+        /* ESTILOS CARÁTULA */
+        .caratula-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+        .caratula-title-main { text-align: center; font-size: 16pt; font-weight: 900; margin-bottom: 25px; text-transform: uppercase; }
+        .caratula-isa-box { border: 2px solid #000; padding: 14px; text-align: center; font-size: 16pt; font-weight: bold; margin-bottom: 35px; }
+        .caratula-grid { display: grid; grid-template-columns: 220px 1fr; row-gap: 22px; column-gap: 15px; font-size: 10.5pt; line-height: 1.5; text-transform: uppercase; }
+        .caratula-label { font-weight: bold; text-decoration: underline; }
+        .caratula-value { font-weight: bold; }
+
+        .page-break { page-break-before: always; margin-top: 30px; }
+
+        /* IMPRESIÓN NATIVA */
+        @media print {
+            body { background: white !important; overflow: visible !important; height: auto !important; }
+            .top-navbar, .left-sidebar-form, .card-title, .actions-bar, #card-desplegable-picker, #note-preview-title { display: none !important; }
+            .app-container { display: block !important; }
+            .main-panel { padding: 0 !important; overflow: visible !important; background: transparent !important; }
+            .card { border: none !important; box-shadow: none !important; padding: 0 !important; background: transparent !important; }
+            .doc-preview-wrapper { background: white !important; padding: 0 !important; gap: 0 !important; overflow: visible !important; }
+            
+            .a4-page { 
+                width: 100% !important; 
+                box-shadow: none !important; 
+                padding-top: 2.5cm !important; 
+                padding-bottom: 2.5cm !important; 
+                padding-left: 4cm !important; 
+                padding-right: 1.5cm !important; 
+                margin: 0 !important; 
+                min-height: auto !important;
+                display: block !important;
+            }
+
+            .caratula-container { display: block !important; height: auto !important; }
+            .caratula-grid { display: grid !important; row-gap: 20px !important; }
+
+            .page-break { page-break-before: always; margin-top: 0; }
+            @page { size: A4; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BARRA SUPERIOR DE NAVEGACIÓN -->
+    <div class="top-navbar">
+        <div class="top-navbar-title">NOTAS PAR</div>
+        <ul class="nav-list-top">
+            <li class="nav-item-top active" onclick="switchTab('caratula_doc', this)">📄 2. Carátula</li>
+            <li class="nav-item-top" onclick="switchTab('dto_recepcion', this)">📄 3. Dto. Recepción</li>
+            <li class="nav-item-top" onclick="switchTab('col_div', this)">📄 4. Col. DIV</li>
+            <li class="nav-item-top" onclick="switchTab('col_existencia_ipp', this)">📄 5. Col. Existencia IPP</li>
+            <li class="nav-item-top" onclick="switchTab('star_existencia_cautelares', this)">📄 6. Existencia Cautelares</li>
+            <li class="nav-item-top" onclick="switchTab('col_cria_myf', this)">📄 7. Col. Cría MYF</li>
+            <li class="nav-item-top" onclick="switchTab('star_inf_anmac_repar', this)">📄 8. Inf. ANMAC / REPAR</li>
+            <li class="nav-item-top" onclick="switchTab('star_lep', this)">📄 9. Legajo Elec. (LEP)</li>
+        </ul>
+    </div>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="app-container">
+        
+        <!-- PANEL IZQUIERDO: FORMULARIO DE CARGA DE DATOS -->
+        <div class="left-sidebar-form">
+            <div class="sidebar-form-header">📝 1. CARGA DE DATOS</div>
+            <div class="sidebar-form-content" id="tab-carga_datos">
+                
+                <div class="form-group"><label>Lugar de Nota</label><input type="text" id="lugar_nota" value="LA MATANZA"></div>
+                <div class="form-group">
+                    <label>Fecha de Nota / Actuación</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="number" id="f_nota_dia" value="23" placeholder="Día" style="width: 30%;">
+                        <input type="text" id="f_nota_mes" value="MAYO" placeholder="Mes" style="width: 35%;">
+                        <input type="number" id="f_nota_anio" value="2026" placeholder="Año" style="width: 35%;">
+                    </div>
+                </div>
+                <div class="form-group"><label>ISA / Carátula Recuadro</label><input type="text" id="caratula_isa" value="ISA 21100-085949/2026, DN154728"></div>
+                <div class="form-group"><label>Expediente Electrónico GDEBA</label><input type="text" id="exp_gdeba" value="EX 2026-16420475- -GDEBA-DDPRYGEMSGP"></div>
+                <div class="form-group"><label>Calificación Administrativa</label><input type="text" id="calificacion" value="SIN ENCUADRE ADMINISTRATIVO"></div>
+                
+                <div class="form-group">
+                    <label>Dirigida A (Dependencia)</label>
+                    <select id="dirigida_a" class="dep-select-options"></select>
+                </div>
+
+                <div class="form-group">
+                    <label>Dependencia Instructora</label>
+                    <select id="procedencia" class="dep-select-options"></select>
+                </div>
+
+                <div class="form-group">
+                    <label>Control Disciplinario Interv.</label>
+                    <select id="intervencion" class="control-disciplinario-options"></select>
+                </div>
+
+                <div class="form-group"><label>Instructor / Autoridad</label><input type="text" id="instructor" value="COMISARIO MAYOR (CDO) HERNAN ABEL BIANDIN"></div>
+                <div class="form-group"><label>Función Autoridad</label><input type="text" id="instructor_funcion" value="subdirector de la Dirección Fuerza Barrial de Aproximación (F.B.A.)"></div>
+                <div class="form-group"><label>Secretario de Actuaciones</label><input type="text" id="secretario" value="OFICIAL SUBAYUDANTE (CDO.) FLORENCIA MILENA ZALAZAR"></div>
+                <div class="form-group"><label>Nombre de Mesa / Fiscalía</label><input type="text" id="nombre_mesa" value="FISCALIA GENERAL DE ENTRADAS"></div>
+                <div class="form-group"><label>Departamento Judicial</label><input type="text" id="dpto_judicial" value="MORON"></div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 10px 0;">
+
+                <div class="form-group">
+                    <label>Fecha del Hecho</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="number" id="f_hecho_dia" value="12" placeholder="Día" style="width: 30%;">
+                        <input type="text" id="f_hecho_mes" value="ENERO" placeholder="Mes" style="width: 35%;">
+                        <input type="number" id="f_hecho_anio" value="2026" placeholder="Año" style="width: 35%;">
+                    </div>
+                </div>
+                <div class="form-group"><label>Lugar del Hecho</label><input type="text" id="lugar_hecho" value="CALLE 1 Y CALLE 2"></div>
+                <div class="form-group"><label>Localidad / Partido del Hecho</label><input type="text" id="localidad_hecho" value="LA PLATA"></div>
+                <div class="form-group"><label>Causante / Imputado</label><input type="text" id="causante_nombre" value="OFICIAL (E.G.) LEGAJO 430299 GALARRAGA BRIAN EZEQUIEL"></div>
+                <div class="form-group"><label>Causante Edad</label><input type="number" id="causante_edad" value="45"></div>
+                <div class="form-group"><label>Causante DNI</label><input type="text" id="causante_dni" value="45.000.123"></div>
+                <div class="form-group"><label>Causante Domicilio / Partido</label><input type="text" id="causante_domicilio" value="CALLE 1 Y CALLE 2, LA PLATA"></div>
+
+                <div class="form-group">
+                    <label>Destino al Momento del Hecho</label>
+                    <select id="causante_destino" class="dep-select-options"></select>
+                </div>
+
+                <div class="form-group"><label>Víctima / Denunciante</label><input type="text" id="victima_nombre" value="CONFIDENCIAL"></div>
+                <div class="form-group"><label>Víctima Edad</label><input type="number" id="victima_edad" value="45"></div>
+                <div class="form-group"><label>Víctima DNI</label><input type="text" id="victima_dni" value="12.123.123"></div>
+                <div class="form-group"><label>Víctima Domicilio</label><input type="text" id="victima_domicilio" value="CALLE 1 Y CALLE 2, LA PLATA"></div>
+                <div class="form-group"><label>Víctima Contacto / Teléfono</label><input type="text" id="victima_contacto" value="11-2257-9393"></div>
+
+                <div class="form-group">
+                    <label>Síntesis del Hecho / Relato</label>
+                    <textarea id="sintesis_relato" rows="4">En fecha 28 de octubre del año 2025, la ciudadana MYRIAN KARINA PAREDE, denuncia en AGAI que posee una casa de su propiedad en RIOBAMBA, PASAJE 1 CASA 2 DE BECCAR, lo cual su hermana ELIZABETH PAREDES junto a sus hijos CARMODY LORELEY NADINE y CARMODY FRANCESCO ELIAN quienes resultan ser numerario de la policía de la provincia de Buenos Aires, han usurpado impidiendo el contacto con su progenitora que reside en el lugar mediante el artilugio de falsas denuncias en su contra para perpetrar perímetros de acercamiento y que un dia jueves al acercarse al inmueble para que se aleje le soltaron un perro dogo propiedad de su CARMODY FRANCESCO ELIAN.</textarea>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- PANEL DERECHO: VISTA PREVIA -->
+        <div class="main-panel">
+            
+            <div class="card" id="card-desplegable-picker" style="display: none;">
+                <div class="card-title">SELECCIÓN DE DILIGENCIAS (DESPLEGABLE EXCLUSIVO COL. DIV)</div>
+                <div class="dropdown-container">
+                    <select id="dropdown-options-select"></select>
+                    <button class="btn btn-add" onclick="addSelectedPoint()">➕ Agregar Punto</button>
+                </div>
+                <label>PUNTOS SELECCIONADOS PARA LA NOTA:</label>
+                <ol class="selected-list" id="selected-points-list"></ol>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <span id="note-preview-title">DOCUMENTO GENERADO</span>
+                    <div class="actions-bar">
+                        <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir Documento</button>
+                        <button class="btn btn-primary" onclick="downloadWordDocument()">📥 Descargar en Word (.docx)</button>
+                    </div>
+                </div>
+                <div class="doc-preview-wrapper" id="doc-preview-wrapper-container">
+                    <div class="a4-page" id="a4-preview"></div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        const LOGO_HEADER_BASE64 = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='60' viewBox='0 0 400 60'><rect width='110' height='35' fill='%237FD1D6'/><text x='7' y='16' font-family='Arial' font-size='9' font-weight='bold' fill='white'>MINISTERIO DE</text><text x='7' y='27' font-family='Arial' font-size='9' font-weight='bold' fill='white'>SEGURIDAD</text><text x='200' y='18' font-family='Arial' font-size='10' font-weight='bold' fill='%23666666'>GOBIERNO DE LA PROVINCIA DE</text><text x='200' y='36' font-family='Arial' font-size='18' font-weight='900' fill='%2351C2D5'>BUENOS AIRES</text></svg>";
+
+        const listaDependenciasColumnaA = [
+            "DIR. FUERZA BARRIAL DE APROX. (FBA)",
+            "DIV. FUERZA BARRIAL DE APROX. I (FBA LOMAS DE ZAMORA)",
+            "DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)",
+            "DIV. FUERZA BARRIAL DE APROX. III (FBA QUILMES)",
+            "DIV. FUERZA BARRIAL DE APROX. IV (FBA FLORENCIO VARELA)",
+            "DIV. FUERZA BARRIAL DE APROX. V (FBA LA PLATA)",
+            "DIV. FUERZA BARRIAL DE APROX. VI (FBA SAN MARTIN)",
+            "DIV. FUERZA BARRIAL DE APROX. VII (FBA TRES DE FEBRERO)",
+            "DIV. FUERZA BARRIAL DE APROX. VIII (FBA ITUZAINGO)",
+            "DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)",
+            "DIV. FUERZA BARRIAL DE APROX. X (FBA MORON)",
+            "DIV. FUERZA BARRIAL DE APROX. XI (FBA MERLO)",
+            "DIV. FUERZA BARRIAL DE APROX. XII (FBA MORENO)",
+            "DIV. FUERZA BARRIAL DE APROX. XIII (FBA MAR DEL PLATA)",
+            "DIV. FUERZA BARRIAL DE APROX. XIV (FBA AVELLANEDA)",
+            "DIV. FUERZA BARRIAL DE APROX. XV (FBA LANUS)",
+            "DIV. FUERZA BARRIAL DE APROX. XVI (FBA MALVINAS ARGENTINAS)",
+            "DIV. FUERZA BARRIAL DE APROX. XVII (FBA EZEIZA)",
+            "DIV. FUERZA BARRIAL DE APROX. XVIII (FBA LA MATANZA SUR)",
+            "DIV. FUERZA BARRIAL DE APROX. XIX (FBA LA MATANZA CENTRO)",
+            "DIV. FUERZA BARRIAL DE APROX. XX (FBA SAN ISIDRO)",
+            "DIV. FUERZA BARRIAL DE APROX. XXI (FBA ESTEBAN ECHEVERRIA)",
+            "DIV. FUERZA BARRIAL DE APROX. XXII (FBA BERISSO)",
+            "DIV. FUERZA BARRIAL DE APROX. XXIII (FBA SAN VICENTE)",
+            "DIV. FUERZA BARRIAL DE APROX. XXIV (FBA PILAR)",
+            "DIV. FUERZA BARRIAL DE APROX. XXV (FBA ENSENADA)",
+            "DIV. FUERZA BARRIAL DE APROX. XXVI (FBA LA MATANZA NORTE)",
+            "DIV. FUERZA BARRIAL DE APROX. XXVII (FBA GRAL RODRIGUEZ)",
+            "DIV. FUERZA BARRIAL DE APROX. XXVIII (FBA BRANDSEN)",
+            "DIV. FUERZA BARRIAL DE APROX. XXIX (FBA BERAZATEGUI)",
+            "DIV. FUERZA BARRIAL DE APROX. XXX (FBA CORONEL ROSALES)"
+        ];
+
+        const listaControlDisciplinarioColumnaE = [
+            "DEPARTAMENTO DE COORDINACIÓN Y CONTROL DISCIPLINARIO DE LA JEFATURA DE POLICIA DE LA PROVINCIA DE BUENOS AIRES",
+            "AUDITORÍA GENERAL DE ASUNTOS INTERNOS (A.G.A.I.)"
+        ];
+
+        const listaOpcionesDesplegableRaw = [
+            "Informe de tipos, dias, horarios y modalidad de servicio del OFL 123123 IMPUTADO DEL HECHO",
+            "Concepto Funcional y Personal firmado por superior directo del causante OFL 123123 IMPUTADO DEL HECHO",
+            "Copia certificada y legible con habilitación del Libro de Novedades de la guardia de fecha 10/abril/2026",
+            "Copia certificada y legible con habilitación del Libro de Prwsentismo y Co.Re.S. de fecha 10/abril/2026",
+            "Legajo Electrónico Personal (L.E.P.) de OFL 123123 IMPUTADO DEL HECHO",
+            "Certifica de Revista legible generado por el Sistema Informático del Personal (SIPP) del OFL 123123 IMPUTADO DEL HECHO",
+            "Adune informe de Comportamiento y Seguimiento tanto en la faz laboral por parte del superior directo del OFL 123123 IMPUTADO DEL HECHO",
+            "Informe si el efectivo usufructuó licencia médica por el evento en estudio, debiéndose adunar copia certificada y legible del sistema informatico (SIPP) resaltando las que correspondan al hecho en pesquisa.",
+            "Copia certificada y legible de denuncia de accidente de trabajo o enfermedad profesional a la Asegurador Provincia A.R.T del lesionado.",
+            "Declaración testimonial al OFL 123123 IMPUTADO DEL HECHO bajo juramento de decir la verdad donde narre el recorrido habitual que realiza habitualmente desde el domicilio al lugar donde presta servicio acompañado con croquis ilustrativo señalando el domicilio declaredo del agente, lugar del siniestro y lugar de trabajo",
+            "Adune copia certificada y legible de orden de servicio vigente al momento de los hechos en investigación.",
+            "Realice informe existencia de Procesos Penales vinculados a los presentes actuados. En caso de ser positivo informe número de causa, caratula, magistrado interviniente, estado en el que se encuentra y temperamento legal adoptado para con el personal policial interviniente. En caso de encontrarse archivadas, informe fecha, legajo y/o acompañe copia certificada del auto que así lo dispone. Solicito se disponga que la información producida y/o actividad desarrollada por el personal, sea volcada mediante Declaración Testimonial, bajo juramento de ley y demás prescripciones legales.",
+            "Copia certificada y legible de CONSTANCIA DE ALTA/ FIN DE TRATAMIENTO de la Aseguradora de Riesgos del Trabajo (A.R.T.) del OFL 123123 VICTIMA DEL HECHO",
+            "Reconocimiento Médico Legal (RML) procticado sobre del OFL 123123 VICTIMA DEL HECHO",
+            "Copia certificada y legible de Licencia de conducir habilitante del conductor de la unidad policial.",
+            "Copia certificada y legible del Seguro Obligatorio para circular del momento del hecho del rodado.",
+            "Copia certificada y legible de Declaración Jurada (DDJJ) expedida por sistema informatico de Personal (SIPP) de vehículos firmada por el OFL 123123 IMPUTADO DEL HECHO",
+            "Efectuar el pertinente contacto con la denunciante con el objetivo de incorporar a estos todos aquellos elementos que a su criterio tiendan a esclarecer el suceso ahora ventilado, pregunte si aún persisten los hechos denunciados, si tuvo contacto posterior con el denunciado, si volvió a sufrir hechos de violencia. Asimismo, se le pregunte si posee testigos presenciales o testigos de referencia (familiares, vecinas/os, personal de asistencia social, pero tengan conocimiento de los hechos de la Ley 12569). Y de ser así, se les recepcione declaración.",
+            "Informe evaluación de riesgo y socio ambiental de las persona en situación de violencia, por razones de género y/o familiar y grupo familiar elaborado por el equipo Interdisciplinario de Comisaria de la Familia que corresponda por jurisdicción.",
+            "Certificar denuncias anteriores con idéntica temática ante dicha Dependencia (Cría de la Familia), debiendo además consignarse el número de EE generado a raíz de cada uno de los oficios mencionados. En caso de ser positivo informe el estado actual de la causa de familia e IPP, debiendo informar situación procesal del agente involucrado (plasmar dicha diligencia mediante declaración testimonial y/o informe judicial).",
+            "Solicitar Junta Medica Departamental (JMD), a efectos de establecer si: a. Se hallan en condiciones psicofísicas de continuar realizando tareas inherentes a su subescalafón, grado y cargo. b. Si se encuentran apto para portar armas de fuego. c. Establecer en su perfil psicológico rasgos de persona violenta, resultando peligroso para sí o para terceros. c. Establecer en su perfil psicológico rasgos de persona violenta, resultando peligroso para sí o para terceros. d. Establecer en su perfil psicológico signos de poseer problemas de consumo problemático de sustancias prohibidas.",
+            "Acta rubricada por el causante con el objeto de establecer si posee en forma particular material incluido en la Ley Nacional 20429 de armas y explosivos y modificatorias, y si algún arma de las denunciadas se halla “homologada como armamento provisto”.",
+            "Informe de ANMAC-REPAR, conforme artículo 13 Protocolo para el Abordaje, la Evaluación, y el Tratamiento del Personal de las Policías de la Provincia de Buenos Aires en Situaciones de Violencia de Género y Violencia Familiar”, aprobado por Resolución del Ministerio de Seguridad Nº 581/2021” (en las actuaciones en que se empleen armas de fuego) a efectos de informar si posee además del armamento provisto y reglamentario, otra arma de fuego.",
+            "Declaración Testimonial u Oficio Judicial, si siguen en vigencia las medidas restrictivas dispuestas por el Juzgado de Familia en turno.",
+            "Informe de Visu realizado por personal idóneo, donde conste las causas del desperfecto mecánico en vehículo oficial.",
+            "Declaración testimonial del encargado de Logística si poseía a cargo del bien patrimonial en cuestión.",
+            "Copia certificada y legible del cargo personal del elemento provisto.",
+            "Copia certificada y legible del cargo personal de chaleco de protección balística.",
+            "Copia certificada y legible de Libre de Deuda de la vestimenta y elementos provistos por la institución. En caso de que se encuentren secuestrados en las actuaciones de mención, realice informe firmado por el titular del elemento adjuntando copia certificada y legible de solicitud de Libramiento y restitución al magistrado judicial interviniente.",
+            "Copia certificada y legible de Licencia de conducir del OFL 123123 IMPUTADO DEL HECHO",
+            "Copia certificada y legible de denuncia a la aseguradora (DL6) de la unidad que nos ocupa.",
+            "Placas fotográficas del móvil del día de los hechos.",
+            "Copia certificada y legible de resolución del chofer de la unidad de autorización para Manejo de Móviles Oficiales de la Dirección de Automotores Oficiales (D.A.O.).",
+            "Declaración testimonial del Jefe de la Subsección Logística, informando puntualmente: origen patrimonial de la unidad; si la unidad fue radiada de servicio y/o dado de baja patrimonial. En el caso de haberse reparado el vehículo a la fecha, forma en que se ha efectuado tal tarea, como así mismo origen de los fondos y si ello ha generado erogación al fisco y su monto.",
+            "Adune presupuesto de taller que cotice el costo de las reparaciones de los daños padecidos al móvil policial.",
+            "Copia certificada y legible de Historia Clínica y/o constancia de atención del nosocomio que realizó la atención primaria del OFL 123123 VICTIMA DEL HECHO"
+        ];
+
+        let appState = {
+            carga_datos: {},
+            currentTab: "caratula_doc",
+            puntosSeleccionadosIndices: [0, 1, 4, 5]
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initFormSelects();
+            bindFormInputs();
+            updateStateFromInputs();
+        });
+
+        function initFormSelects() {
+            const depSelects = document.querySelectorAll('.dep-select-options');
+            depSelects.forEach(select => {
+                select.innerHTML = '';
+                listaDependenciasColumnaA.forEach(dep => {
+                    const opt = document.createElement('option');
+                    opt.value = dep;
+                    opt.textContent = dep;
+                    select.appendChild(opt);
+                });
+            });
+
+            document.getElementById('dirigida_a').value = "DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)";
+            document.getElementById('procedencia').value = "DIR. FUERZA BARRIAL DE APROX. (FBA)";
+            document.getElementById('causante_destino').value = "DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)";
+
+            const cdSelect = document.getElementById('intervencion');
+            cdSelect.innerHTML = '';
+            listaControlDisciplinarioColumnaE.forEach(ctrl => {
+                const opt = document.createElement('option');
+                opt.value = ctrl;
+                opt.textContent = ctrl;
+                cdSelect.appendChild(opt);
+            });
+            cdSelect.value = "DEPARTAMENTO DE COORDINACIÓN Y CONTROL DISCIPLINARIO DE LA JEFATURA DE POLICIA DE LA PROVINCIA DE BUENOS AIRES";
+        }
+
+        function bindFormInputs() {
+            document.querySelectorAll('#tab-carga_datos input, #tab-carga_datos select, #tab-carga_datos textarea').forEach(input => {
+                input.addEventListener('input', updateStateFromInputs);
+                input.addEventListener('change', updateStateFromInputs);
+            });
+        }
+
+        function getFechaHechoFormatted(bold = true) {
+            const cd = appState.carga_datos;
+            const dia = cd.f_hecho_dia || '12';
+            const mes = (cd.f_hecho_mes || 'ENERO').toLowerCase();
+            const anio = cd.f_hecho_anio || '2026';
+            const str = `${dia} de ${mes} del ${anio}`;
+            return bold ? `<b>${str}</b>` : str;
+        }
+
+        function getFechaNotaFormatted(bold = true) {
+            const cd = appState.carga_datos;
+            const dia = cd.f_nota_dia || '23';
+            const mes = (cd.f_nota_mes || 'MAYO').toLowerCase();
+            const anio = cd.f_nota_anio || '2026';
+            const str = `${dia} de ${mes} del ${anio}`;
+            return bold ? `<b>${str}</b>` : str;
+        }
+
+        function formatPointText(rawText, htmlMode = true) {
+            if (!rawText) return '';
+            const cd = appState.carga_datos;
+            const causante = cd.causante_nombre || 'OFL 123123 IMPUTADO DEL HECHO';
+            const victima = cd.victima_nombre || 'OFL 123123 VICTIMA DEL HECHO';
+            const fechaHecho = getFechaHechoFormatted(htmlMode);
+
+            return rawText
+                .replaceAll("OFL 123123 IMPUTADO DEL HECHO", causante)
+                .replaceAll("OFL 123123 VICTIMA DEL HECHO", victima)
+                .replaceAll("10/abril/2026", fechaHecho);
+        }
+
+        function updateStateFromInputs() {
+            document.querySelectorAll('#tab-carga_datos input, #tab-carga_datos select, #tab-carga_datos textarea').forEach(input => {
+                appState.carga_datos[input.id] = input.value;
+                input.title = input.value;
+            });
+            
+            populateDropdownOptions();
+            renderSelectedPointsList();
+            renderNotePreview(appState.currentTab);
+        }
+
+        function populateDropdownOptions() {
+            const select = document.getElementById('dropdown-options-select');
+            if (!select) return;
+            const currentSelected = select.value;
+            select.innerHTML = '';
+            listaOpcionesDesplegableRaw.forEach((rawText, index) => {
+                const formattedTextOnly = formatPointText(rawText, false);
+                const opt = document.createElement('option');
+                opt.value = index;
+                opt.textContent = `${index + 1}. ${formattedTextOnly}`;
+                select.appendChild(opt);
+            });
+            if (currentSelected !== null && currentSelected !== undefined) {
+                select.value = currentSelected;
+            }
+        }
+
+        function addSelectedPoint() {
+            const select = document.getElementById('dropdown-options-select');
+            const idx = parseInt(select.value, 10);
+            if (!isNaN(idx) && !appState.puntosSeleccionadosIndices.includes(idx)) {
+                appState.puntosSeleccionadosIndices.push(idx);
+                renderSelectedPointsList();
+                renderNotePreview(appState.currentTab);
+            }
+        }
+
+        function removePoint(indexInSelected) {
+            appState.puntosSeleccionadosIndices.splice(indexInSelected, 1);
+            renderSelectedPointsList();
+            renderNotePreview(appState.currentTab);
+        }
+
+        function renderSelectedPointsList() {
+            const listEl = document.getElementById('selected-points-list');
+            if (!listEl) return;
+            listEl.innerHTML = '';
+            appState.puntosSeleccionadosIndices.forEach((rawIdx, listIdx) => {
+                const rawText = listaOpcionesDesplegableRaw[rawIdx];
+                const formattedHtml = formatPointText(rawText, true);
+                const li = document.createElement('li');
+                li.innerHTML = `<span><strong>${listIdx + 1}.</strong> ${formattedHtml}</span> <button class="btn btn-danger" onclick="removePoint(${listIdx})">❌ Quitar</button>`;
+                listEl.appendChild(li);
+            });
+        }
+
+        function switchTab(tabKey, element) {
+            document.querySelectorAll('.nav-item-top').forEach(el => el.classList.remove('active'));
+            if (element) element.classList.add('active');
+
+            appState.currentTab = tabKey;
+            const pickerCard = document.getElementById('card-desplegable-picker');
+            pickerCard.style.display = (tabKey === 'col_div') ? 'block' : 'none';
+            renderNotePreview(tabKey);
+        }
+
+        function renderNotePreview(tabKey) {
+            const container = document.getElementById('doc-preview-wrapper-container');
+            const cd = appState.carga_datos;
+            
+            const lugarNota = cd.lugar_nota || 'LA MATANZA';
+            const fechaNotaStr = getFechaNotaFormatted(true);
+            const fechaEncabezadoLugarHtml = `${lugarNota}, ${fechaNotaStr}`;
+            const depInstructora = cd.procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)';
+            const fechaEncabezadoDepHtml = `${depInstructora}, ${fechaNotaStr}`;
+            const fechaHechoHtml = getFechaHechoFormatted(true);
+            const domicilioCausante = cd.causante_domicilio || 'CALLE 1 Y CALLE 2, LA PLATA';
+
+            const logoHtml = `<div class="doc-header-logo"><img src="${LOGO_HEADER_BASE64}"></div>`;
+
+            if (tabKey === 'caratula_doc') {
+                container.innerHTML = `
+                <div class="a4-page caratula-page">
+                    ${logoHtml}
+                    <div class="caratula-container">
+                        <div class="caratula-title-main">ACTUACION SUMARIAL ADMINISTRATIVA</div>
+                        <div class="caratula-isa-box">${cd.caratula_isa || 'ISA 21100-085949/2026, DN154728'}</div>
+                        <div class="caratula-grid">
+                            <div class="caratula-label">EXPEDIENTE ELECTRONICO:</div>
+                            <div class="caratula-value">${cd.exp_gdeba || 'EX 2026-16420475- -GDEBA-DDPRYGEMSGP'}</div>
+
+                            <div class="caratula-label">CALIFICACIÓN ADMINISTRATIVA:</div>
+                            <div class="caratula-value">${cd.calificacion || 'SIN ENCUADRE ADMINISTRATIVO'}</div>
+
+                            <div class="caratula-label">FECHA DEL HECHO:</div>
+                            <div class="caratula-value">${fechaHechoHtml}</div>
+
+                            <div class="caratula-label">DENUNCIANTE:</div>
+                            <div class="caratula-value">${cd.victima_nombre || 'CONFIDENCIAL'}</div>
+
+                            <div class="caratula-label">CAUSANTE:</div>
+                            <div class="caratula-value">${cd.causante_nombre || 'OFICIAL (E.G.) LEGAJO 430299 GALARRAGA BRIAN EZEQUIEL'}</div>
+
+                            <div class="caratula-label">DESTINO AL MOMENTO DEL HECHO:</div>
+                            <div class="caratula-value">${cd.causante_destino || 'DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)'}</div>
+
+                            <div class="caratula-label">CTROL. DISCIPLINARIO INTERV.:</div>
+                            <div class="caratula-value">${cd.intervencion || 'DEPARTAMENTO DE COORDINACIÓN Y CONTROL DISCIPLINARIO'}</div>
+
+                            <div class="caratula-label">INSTRUCTOR:</div>
+                            <div class="caratula-value">${cd.instructor || 'COMISARIO MAYOR (CDO) HERNAN ABEL BIANDIN'}</div>
+
+                            <div class="caratula-label">SECRETARIO DE ACTUACION:</div>
+                            <div class="caratula-value">${cd.secretario || 'OFICIAL SUBAYUDANTE (CDO.) FLORENCIA MILENA ZALAZAR'}</div>
+
+                            <div class="caratula-label">DEPENDENCIA INSTRUCTORA:</div>
+                            <div class="caratula-value">${depInstructora}</div>
+                        </div>
+                    </div>
+                </div>`;
+                return;
+            }
+
+            if (tabKey === 'dto_recepcion') {
+                container.innerHTML = `
+                <div class="a4-page">
+                    ${logoHtml}
+                    <div style="text-align: right; font-weight: bold; font-size: 11pt; margin-bottom: 0.3cm; margin-top: 0;">
+                        Corresponde a Exp. ${cd.caratula_isa || 'ISA 21100-085949, DN154728'}
+                    </div>
+                    <div style="font-weight: bold; font-size: 11pt; margin-bottom: 0.8cm;">
+                        ${fechaEncabezadoDepHtml}
+                    </div>
+                    <div class="doc-body">
+                        <p style="text-align: justify; text-indent: 1.5cm; margin-bottom: 1.2em;">
+                            <strong>RECIBIDO:</strong> En la fecha, previo registro en los libros correspondientes y, atento a su contenido en el marco de <strong>expediente ${cd.caratula_isa || 'ISA 21100-085949, DN154728'}</strong> en donde resulta denunciante <strong>${cd.victima_nombre || 'CONFIDENCIAL'}</strong>, en la cual se analiza la conducta del <strong>${cd.causante_nombre || 'OFICIAL (E.G) LEGAJO 430299 GALARRAGA BRIAN EZEQUIEL'}</strong>, numeraria de la <strong>${cd.dirigida_a || 'DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)'}</strong>, en trámite ante la <strong>${cd.intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</strong>, el suscripto <strong>${cd.instructor || 'COMISARIO MAYOR (CDO) HERNAN ABEL BIANDIN'}</strong>, en mis funciones inherentes como <strong>${cd.instructor_funcion || 'subdirector de la Dirección Fuerza Barrial de Aproximación (F.B.A.)'}</strong>, a párrafo seguido.
+                        </p>
+                        <p style="text-indent: 2.5cm; font-size: 11pt; margin-bottom: 1.5em;">Por ello;</p>
+                        <div style="font-weight: bold; font-size: 11pt; margin-bottom: 1em;">RESUELVO:</div>
+                        <ol style="padding-left: 2.5cm; list-style-type: none;">
+                            <li style="margin-bottom: 0.8em; text-indent: -1cm;">Designar como secretario de actuaciones a producirse al oficial quién refrenda al pie a continuación para tener legal constancia de lo actuado.</li>
+                            <li style="margin-bottom: 0.8em;">Dar estricto cumplimiento a todo lo solicitado.</li>
+                            <li style="margin-bottom: 0.8em;">Cumplir con toda diligencia que sea de menester y/o surja de lo actuado.</li>
+                            <li style="margin-bottom: 1.5em; text-align: justify;">Cumplidas todas las diligencias requeridas por el ente y vuelva para su prosecución.</li>
+                        </ol>
+                        <div style="font-weight: bold; font-size: 11pt; margin-top: 2.5em; text-align: center;">CUMPLA EL ACTUARIO.</div>
+                    </div>
+                </div>
+
+                <div class="a4-page page-break">
+                    <div style="font-weight: bold; font-size: 11pt; margin-bottom: 1.5em; margin-top: 2cm;">
+                        SEÑOR INSTRUCTOR:
+                    </div>
+                    <div style="text-indent: 2.5cm; font-size: 11pt; margin-bottom: 1.5em;">
+                        Tomo conocimiento y daré estricto cumplimiento a lo ordenado por usted.
+                    </div>
+                    <div style="font-weight: bold; font-size: 11pt; margin-bottom: 1.5em;">
+                        CONSTE.
+                    </div>
+                    <div style="font-weight: bold; font-size: 11pt;">
+                        ${fechaEncabezadoDepHtml}
+                    </div>
+                </div>`;
+                return;
+            }
+
+            let htmlContent = logoHtml;
+
+            if (tabKey === 'col_div') {
+                let listHtml = '<ol>';
+                appState.puntosSeleccionadosIndices.forEach(idx => { 
+                    const raw = listaOpcionesDesplegableRaw[idx];
+                    listHtml += `<li>${formatPointText(raw, true)}</li>`; 
+                });
+                listHtml += '</ol>';
+                htmlContent += `
+                    <div class="doc-mid-section">
+                        <div><strong>REF.:</strong> Star. colaboración</div>
+                        <div>${fechaEncabezadoLugarHtml}</div>
+                    </div>
+                    <div class="doc-addressee">AL SEÑOR JEFE<br>${cd.dirigida_a}<br>SUBSECCION PERSONAL</div>
+                    <div class="doc-body">
+                        <p>Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.caratula_isa} en trámite ante ${cd.intervencion}, por el hecho ocurrido en fecha ${fechaHechoHtml}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:</p>
+                        ${listHtml}
+                        <p>Lo expuesto es todo en cuanto solicito a usted.</p>
+                    </div>`;
+            } else if (tabKey === 'col_existencia_ipp') {
+                htmlContent += `
+                    <div class="doc-mid-section">
+                        <div><strong>REF.:</strong> Star. Informe existencia de IPP, estado de causa y temperamento adoptado</div>
+                        <div>${fechaEncabezadoLugarHtml}</div>
+                    </div>
+                    <div class="doc-addressee">AL SEÑOR AGENTE FISCAL<br>${cd.nombre_mesa}<br>DEPARTAMENTO JUDICIAL ${cd.dpto_judicial}</div>
+                    <div class="doc-body">
+                        <p>Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.caratula_isa} en trámite ante ${cd.intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:</p>
+                        <ol>
+                            <li>Si existe registro de algún Proceso Penal en trámite donde resulte denunciado el ${cd.causante_nombre}, edad: ${cd.causante_edad}, Documento Nacional de Identidad N°: ${cd.causante_dni} en la víspera del ${fechaHechoHtml} o posteriores, en la arteria ${domicilioCausante}.</li>
+                            <li>Asimismo solicito informe la existencia de denuncias de igual tenor con respecto a Infracción con la Ley 12569.</li>
+                        </ol>
+                        <p>En caso de ser positivo solicito informe número de causa, carátula, estado actual de la misma y temperamento tomado para con el personal policial involucrado. Encarezco el resultado TÉRMINO MUY URGENTE en virtud fenecer los términos otorgados por la Superioridad y son vitales para la resolución administrativa del causante. Sirva adelantar el resultado a este mismo correo electrónico.</p>
+                        <p>Lo expuesto es todo en cuanto solicito a usted.</p>
+                    </div>`;
+            } else if (tabKey === 'star_existencia_cautelares') {
+                htmlContent += `
+                    <div class="doc-mid-section">
+                        <div><strong>REF.:</strong> Pcir. Informe</div>
+                        <div>${fechaEncabezadoLugarHtml}</div>
+                    </div>
+                    <div class="doc-addressee">AL SEÑOR AGENTE FISCAL<br>${cd.nombre_mesa}<br>DEPARTAMENTO JUDICIAL ${cd.dpto_judicial}</div>
+                    <div class="doc-body">
+                        <p>Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.caratula_isa} en trámite ante ${cd.intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:</p>
+                        <ol>
+                            <li>Si existe registro de algún Proceso Penal en trámite que tenga vinculación, donde resulte denunciado el ${cd.causante_nombre}, edad: ${cd.causante_edad}, Documento Nacional de Identidad N°: ${cd.causante_dni} en la víspera del ${fechaHechoHtml} o posteriores, en la arteria ${domicilioCausante}.</li>
+                            <li>Asimismo solicito informe la existencia de denuncias de igual tenor con respecto a Infracción con la Ley 12569.</li>
+                        </ol>
+                        <p>En caso de ser positivo solicito informe número de causa, carátula, estado actual de la misma y temperamento tomado para con el personal policial involucrado. Encarezco el resultado TÉRMINO MUY URGENTE.</p>
+                        <p>Lo expuesto es todo en cuanto solicito a usted.</p>
+                    </div>`;
+            } else if (tabKey === 'col_cria_myf') {
+                htmlContent += `
+                    <div class="doc-mid-section">
+                        <div><strong>REF.:</strong> Star. colaboración</div>
+                        <div>${fechaEncabezadoLugarHtml}</div>
+                    </div>
+                    <div class="doc-addressee">AL SEÑOR/A SUPERINTENDENTE/A<br>SUPERINTENDENCIA DE POLÍTICAS DE GÉNERO<br>MINISTERIO DE SEGURIDAD</div>
+                    <div class="doc-body">
+                        <p>Me dirijo a usted a los fines de solicitarle en el marco de ${cd.caratula_isa} donde se evalúa la conducta del ${cd.causante_nombre} ${cd.victima_nombre}, en trámite ante el ${cd.intervencion}, quiera tener a bien de realizar a través de los profesionales de sus equipos interdisciplinarios, a tenor de lo normado en el artículo 9 del Protocolo para el Abordaje, la Evaluación y el Tratamiento del Personal de las Policías de la Provincia de Buenos Aires en situaciones de Violencia de Género y Violencia Familiar, aprobado por la RESO-2021-581-GDEBA-MSGP, un informe de evaluación de riesgo y socio ambiental a la ciudadana/o:</p>
+                        <p><strong>Nombre:</strong> ${cd.victima_nombre}, <strong>edad:</strong> ${cd.victima_edad}, <strong>Documento Nacional de Identidad N°:</strong> ${cd.victima_dni}, <strong>domicilio en:</strong> ${cd.victima_domicilio}, <strong>teléfono de contacto:</strong> ${cd.victima_contacto}.</p>
+                        <p>Que deberán ser comunicados en un plazo máximo de diez (10) días corridos, contados a partir del presente requerimiento, con copia a la Dirección Provincial de Políticas de Género y Derechos Humanos en los casos en que la PSVG/F sea personal policial.</p>
+                        <p>Para mayor ilustración, se hace saber la síntesis del hecho descripto en la denuncia: ${cd.sintesis_relato}</p>
+                        <p>Asimismo Informe la existencia de denuncias anteriores con idéntica temática ante Comisaría MYF de jurisdicción. En caso de ser afirmativo aportar número de denuncia, número de Expediente GDEBA generado a raíz de cada uno de los hechos.</p>
+                        <p>Lo expuesto es todo en cuanto solicito a usted.</p>
+                    </div>`;
+            } else if (tabKey === 'star_inf_anmac_repar') {
+                htmlContent += `
+                    <div class="doc-mid-section">
+                        <div><strong>REF.:</strong> Pcir. Informe ANMAC / REPAR</div>
+                        <div>${fechaEncabezadoLugarHtml}</div>
+                    </div>
+                    <div class="doc-addressee">AL SEÑOR DIRECTOR<br>REGISTRO PROVINCIAL DE ARMAS (R.E.P.A.R.)<br>S / D</div>
+                    <div class="doc-body">
+                        <p>Me dirijo a usted en el marco de las Actuaciones Sumariales Administrativas correspondientes al Expediente <strong>${cd.caratula_isa}</strong>, en trámite ante el <strong>${cd.intervencion}</strong>, a fin de solicitarle tenga a bien disponer las medidas necesarias para informar a esta Instrucción:</p>
+                        <p>Si el numerario policial <strong>${cd.causante_nombre}</strong>, DNI N° <strong>${cd.causante_dni}</strong>, con domicilio registrado en <strong>${cd.causante_domicilio}</strong>, registra armamento de fuego debidamente asentado a su nombre ante el Registro Nacional de Armas (A.N.M.A.C.) y/o R.E.P.A.R., requiriéndose especificar tipo, marca, modelo, calibre y número de serie de la totalidad de las armas que pudieren figurar registradas.</p>
+                        <p>El presente informe resulta de carácter prioritario para la prosecución del sumario administrativo incoado.</p>
+                        <p>Lo expuesto es todo en cuanto solicito a usted.</p>
+                    </div>`;
+            } else if (tabKey === 'star_lep') {
+                htmlContent += `
+                    <div class="doc-mid-section">
+                        <div><strong>REF.:</strong> Star. Legajo Electrónico Personal (L.E.P.)</div>
+                        <div>${fechaEncabezadoLugarHtml}</div>
+                    </div>
+                    <div class="doc-addressee">AL SEÑOR DIRECTOR<br>DIRECCIÓN DE PERSONAL - REGÍMENES POLICIALES<br>SECCIÓN EXPEDIENTES E INFORMES PERSONAL</div>
+                    <div class="doc-body">
+                        <p>Me dirijo a usted en el marco de las Actuaciones Sumariales Administrativas caratuladas <strong>${cd.caratula_isa}</strong>, que se instruyen por ante el <strong>${cd.intervencion}</strong>, a efectos de solicitarle tenga a bien remitir con carácter de URGENTE a esta Instrucción:</p>
+                        <p>Copia debidamente certificada y legible del <strong>Legajo Electrónico Personal (L.E.P.)</strong> y de la sábana de la Situación de Revista expedida por el Sistema Informático de Personal (S.I.P.P.) perteneciente al efectivo policial <strong>${cd.causante_nombre}</strong>, DNI N° <strong>${cd.causante_dni}</strong>, actualmente con destino en <strong>${cd.causante_destino}</strong>.</p>
+                        <p>La documentación requerida es imprescindible para la debida acreditación de los antecedentes y situación de revista del causante en el presente actuado administrativo.</p>
+                        <p>Lo expuesto es todo en cuanto solicito a usted.</p>
+                    </div>`;
+            }
+
+            container.innerHTML = `<div class="a4-page">${htmlContent}</div>`;
+        }
+
+        function createWordRunsFromHtml(htmlText, docxModule) {
+            const { TextRun } = docxModule;
+            const runs = [];
+            const parts = htmlText.split(/(<b>.*?<\/b>)/gi);
+            parts.forEach(part => {
+                if (!part) return;
+                if (part.toLowerCase().startsWith('<b>') && part.toLowerCase().endsWith('</b>')) {
+                    const cleanText = part.replace(/<\/?b>/gi, '');
+                    runs.push(new TextRun({ text: cleanText, bold: true, font: "Arial", size: 22 }));
+                } else {
+                    runs.push(new TextRun({ text: part, font: "Arial", size: 22 }));
+                }
+            });
+            return runs;
+        }
+
+        function downloadWordDocument() {
+            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = window.docx;
+            const cd = appState.carga_datos;
+            const tabKey = appState.currentTab;
+
+            const topMarginTwips = Math.round(3.0 * 566.929);
+            const bottomMarginTwips = Math.round(2.5 * 566.929);
+            const leftMarginTwips = Math.round(4.0 * 566.929);
+            const rightMarginTwips = Math.round(1.5 * 566.929);
+            const mitadPaginaTwips = Math.round(6.5 * 566.929);
+
+            const lugarNota = cd.lugar_nota || 'LA MATANZA';
+            const fechaNotaStr = getFechaNotaFormatted(true);
+            const fechaEncabezadoLugarHtml = `${lugarNota}, ${fechaNotaStr}`;
+            const depInstructora = cd.procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)';
+            const fechaEncabezadoDepHtml = `${depInstructora}, ${fechaNotaStr}`;
+            const fechaHechoHtml = getFechaHechoFormatted(true);
+            const domicilioCausante = cd.causante_domicilio || 'CALLE 1 Y CALLE 2, LA PLATA';
+
+            const noBorder = {
+                top: { style: BorderStyle.NONE, size: 0, color: "auto" },
+                bottom: { style: BorderStyle.NONE, size: 0, color: "auto" },
+                left: { style: BorderStyle.NONE, size: 0, color: "auto" },
+                right: { style: BorderStyle.NONE, size: 0, color: "auto" },
+            };
+
+            const sections = [];
+
+            if (tabKey === 'caratula_doc') {
+                const caratulaData = [
+                    ["EXPEDIENTE ELECTRONICO:", cd.exp_gdeba || 'EX-2026-16420475- -GDEBA-DDPRYGEMSGP'],
+                    ["CALIFICACIÓN ADMINISTRATIVA:", cd.calificacion || 'SIN ENCUADRE ADMINISTRATIVO'],
+                    ["FECHA DEL HECHO:", getFechaHechoFormatted(false)],
+                    ["DENUNCIANTE:", cd.victima_nombre || 'CONFIDENCIAL'],
+                    ["CAUSANTE:", cd.causante_nombre || 'OFICIAL (E.G.) LEGAJO 430299 GALARRAGA BRIAN EZEQUIEL'],
+                    ["DESTINO AL MOMENTO DEL HECHO:", cd.causante_destino || 'DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)'],
+                    ["CTROL. DISCIPLINARIO INTERV.:", cd.intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'],
+                    ["INSTRUCTOR:", cd.instructor || 'COMISARIO MAYOR (CDO) HERNAN ABEL BIANDIN'],
+                    ["SECRETARIO DE ACTUACION:", cd.secretario || 'OFICIAL SUBAYUDANTE (CDO.) FLORENCIA MILENA ZALAZAR'],
+                    ["DEPENDENCIA INSTRUCTORA:", depInstructora]
+                ];
+
+                const gridRows = caratulaData.map(([lbl, val]) => {
+                    return new TableRow({
+                        children: [
+                            new TableCell({
+                                width: { size: 40, type: WidthType.PERCENTAGE },
+                                borders: noBorder,
+                                children: [new Paragraph({ spacing: { before: 180, after: 180 }, children: [new TextRun({ text: lbl, bold: true, underline: {}, size: 22, font: "Arial" })] })]
+                            }),
+                            new TableCell({
+                                width: { size: 60, type: WidthType.PERCENTAGE },
+                                borders: noBorder,
+                                children: [new Paragraph({ spacing: { before: 180, after: 180 }, children: [new TextRun({ text: val, bold: true, size: 22, font: "Arial" })] })]
+                            })
+                        ]
+                    });
+                });
+
+                sections.push({
+                    properties: { page: { size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips } } },
+                    children: [
+                        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 400 }, children: [new TextRun({ text: "ACTUACION SUMARIAL ADMINISTRATIVA", bold: true, size: 32, font: "Arial" })] }),
+                        new Table({
+                            width: { size: 100, type: WidthType.PERCENTAGE },
+                            rows: [new TableRow({ children: [new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 120, after: 120 }, children: [new TextRun({ text: cd.caratula_isa || 'ISA 21100-085949/2026, DN154728', bold: true, size: 32, font: "Arial" })] })] })] })]
+                        }),
+                        new Paragraph({ spacing: { after: 500 } }),
+                        new Table({
+                            width: { size: 100, type: WidthType.PERCENTAGE },
+                            rows: gridRows
+                        })
+                    ]
+                });
+            } else if (tabKey === 'dto_recepcion') {
+                sections.push({
+                    properties: { page: { size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips } } },
+                    children: [
+                        new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { line: 360, after: 100 }, children: [new TextRun({ text: `Corresponde a Exp. ${cd.caratula_isa || 'ISA 21100-085949, DN154728'}`, bold: true, size: 22, font: "Arial" })] }),
+                        new Paragraph({ alignment: AlignmentType.LEFT, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(fechaEncabezadoDepHtml, window.docx) }),
+                        new Paragraph({
+                            alignment: AlignmentType.JUSTIFY,
+                            indent: { firstLine: Math.round(1.25 * 566.929) },
+                            spacing: { line: 360, after: 200 },
+                            children: [
+                                new TextRun({ text: "RECIBIDO: ", bold: true, font: "Arial", size: 22 }),
+                                new TextRun({ text: "En la fecha, previo registro en los libros correspondientes y, atento a su contenido en el marco de ", font: "Arial", size: 22 }),
+                                new TextRun({ text: `expediente ${cd.caratula_isa || 'ISA 21100-085949, DN154728'}`, bold: true, font: "Arial", size: 22 }),
+                                new TextRun({ text: " en donde resulta denunciante ", font: "Arial", size: 22 }),
+                                new TextRun({ text: `${cd.victima_nombre || 'CONFIDENCIAL'}`, bold: true, font: "Arial", size: 22 }),
+                                new TextRun({ text: ", en la cual se analiza la conducta del ", font: "Arial", size: 22 }),
+                                new TextRun({ text: `${cd.causante_nombre || 'OFICIAL (E.G.) LEGAJO 430299 GALARRAGA BRIAN EZEQUIEL'}`, bold: true, font: "Arial", size: 22 }),
+                                new TextRun({ text: ", numeraria de la ", font: "Arial", size: 22 }),
+                                new TextRun({ text: `${cd.dirigida_a || 'DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)'}`, bold: true, font: "Arial", size: 22 }),
+                                new TextRun({ text: ", en trámite ante la ", font: "Arial", size: 22 }),
+                                new TextRun({ text: `${cd.intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}`, bold: true, font: "Arial", size: 22 }),
+                                new TextRun({ text: ", el suscripto ", font: "Arial", size: 22 }),
+                                new TextRun({ text: `${cd.instructor || 'COMISARIO MAYOR (CDO) HERNAN ABEL BIANDIN'}`, bold: true, font: "Arial", size: 22 }),
+                                new TextRun({ text: ", en mis funciones inherentes como ", font: "Arial", size: 22 }),
+                                new TextRun({ text: `${cd.instructor_funcion || 'subdirector de la Dirección Fuerza Barrial de Aproximación (F.B.A.)'}`, bold: true, font: "Arial", size: 22 }),
+                                new TextRun({ text: ", a párrafo seguido.", font: "Arial", size: 22 })
+                            ]
+                        }),
+                        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { line: 360, before: 200, after: 200 }, children: [new TextRun({ text: "Por ello;", font: "Arial", size: 22 })] }),
+                        new Paragraph({ spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "RESUELVO:", bold: true, font: "Arial", size: 22 })] }),
+                        new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: [new TextRun({ text: "Designar como secretario de actuaciones a producirse al oficial quién refrenda al pie a continuación para tener legal constancia de lo actuado.", font: "Arial", size: 22 })] }),
+                        new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: [new TextRun({ text: "Dar estricto cumplimiento a todo lo solicitado.", font: "Arial", size: 22 })] }),
+                        new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: [new TextRun({ text: "Cumplir con toda diligencia que sea de menester y/o surja de lo actuado.", font: "Arial", size: 22 })] }),
+                        new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "Cumplidas todas las diligencias requeridas por el ente y vuelva para su prosecución.", font: "Arial", size: 22 })] }),
+                        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { line: 360, before: 400 }, children: [new TextRun({ text: "CUMPLA EL ACTUARIO.", bold: true, font: "Arial", size: 22 })] })
+                    ]
+                });
+
+                sections.push({
+                    properties: { page: { size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips } } },
+                    children: [
+                        new Paragraph({ spacing: { line: 360, before: 600, after: 300 }, children: [new TextRun({ text: "SEÑOR INSTRUCTOR:", bold: true, font: "Arial", size: 22 })] }),
+                        new Paragraph({ indent: { firstLine: Math.round(1.5 * 566.929) }, spacing: { line: 360, after: 300 }, children: [new TextRun({ text: "Tomo conocimiento y daré estricto cumplimiento a lo ordenado por usted.", font: "Arial", size: 22 })] }),
+                        new Paragraph({ spacing: { line: 360, after: 300 }, children: [new TextRun({ text: "CONSTE.", bold: true, font: "Arial", size: 22 })] }),
+                        new Paragraph({ spacing: { line: 360 }, children: createWordRunsFromHtml(fechaEncabezadoDepHtml, window.docx) })
+                    ]
+                });
+            } else {
+                let refTitle = "Star. colaboración";
+                if (tabKey === 'col_existencia_ipp') refTitle = "Star. Informe existencia de IPP, estado de causa y temperamento adoptado";
+                if (tabKey === 'star_existencia_cautelares') refTitle = "Pcir. Informe";
+                if (tabKey === 'star_inf_anmac_repar') refTitle = "Pcir. Informe ANMAC / REPAR";
+                if (tabKey === 'star_lep') refTitle = "Star. Legajo Electrónico Personal (L.E.P.)";
+
+                const mainPars = [
+                    new Paragraph({ alignment: AlignmentType.LEFT, indent: { left: mitadPaginaTwips }, spacing: { line: 360 }, children: [new TextRun({ text: "REF.: ", bold: true, font: "Arial", size: 22 }), new TextRun({ text: refTitle, font: "Arial", size: 22 })] }),
+                    new Paragraph({ alignment: AlignmentType.LEFT, indent: { left: mitadPaginaTwips }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(fechaEncabezadoLugarHtml, window.docx) })
+                ];
+
+                if (tabKey === 'col_div') {
+                    mainPars.push(new Paragraph({ spacing: { line: 360, after: 300 }, children: [new TextRun({ text: `AL SEÑOR JEFE\n${cd.dirigida_a || 'DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)'}\nSUBSECCION PERSONAL`, bold: true, font: "Arial", size: 22 })] }));
+                    
+                    const p1Text = `Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.caratula_isa} en trámite ante ${cd.intervencion}, por el hecho ocurrido en fecha ${fechaHechoHtml}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:`;
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(p1Text, window.docx) }));
+                    
+                    appState.puntosSeleccionadosIndices.forEach((rawIdx, listIdx) => {
+                        const raw = listaOpcionesDesplegableRaw[rawIdx];
+                        const pointFormattedHtml = `${listIdx + 1}. ${formatPointText(raw, true)}`;
+                        mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: createWordRunsFromHtml(pointFormattedHtml, window.docx) }));
+                    });
+                } else if (tabKey === 'col_existencia_ipp') {
+                    mainPars.push(new Paragraph({ spacing: { line: 360, after: 300 }, children: [new TextRun({ text: `AL SEÑOR AGENTE FISCAL\n${cd.nombre_mesa || 'FISCALIA GENERAL DE ENTRADAS'}\nDEPARTAMENTO JUDICIAL ${cd.dpto_judicial || 'MORON'}`, bold: true, font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.caratula_isa} en trámite ante ${cd.intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:`, font: "Arial", size: 22 })] }));
+                    
+                    const pItem1 = `1. Si existe registro de algún Proceso Penal en trámite donde resulte denunciado el ${cd.causante_nombre}, edad: ${cd.causante_edad}, Documento Nacional de Identidad N°: ${cd.causante_dni} en la víspera del ${fechaHechoHtml} o posteriores, en la arteria ${domicilioCausante}.`;
+                    mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: createWordRunsFromHtml(pItem1, window.docx) }));
+                    mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "2. Asimismo solicito informe la existencia de denuncias de igual tenor con respecto a Infracción con la Ley 12569.", font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "En caso de ser positivo solicito informe número de causa, carátula, estado actual de la misma y temperamento tomado para con el personal policial involucrado. Encarezco el resultado TÉRMINO MUY URGENTE en virtud fenecer los términos otorgados por la Superioridad y son vitales para la resolución administrativa del causante. Sirva adelantar el resultado a este mismo correo electrónico.", font: "Arial", size: 22 })] }));
+                } else if (tabKey === 'star_existencia_cautelares') {
+                    mainPars.push(new Paragraph({ spacing: { line: 360, after: 300 }, children: [new TextRun({ text: `AL SEÑOR AGENTE FISCAL\n${cd.nombre_mesa || 'FISCALIA GENERAL DE ENTRADAS'}\nDEPARTAMENTO JUDICIAL ${cd.dpto_judicial || 'MORON'}`, bold: true, font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.caratula_isa} en trámite ante ${cd.intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:`, font: "Arial", size: 22 })] }));
+                    
+                    const pItem1 = `1. Si existe registro de algún Proceso Penal en trámite que tenga vinculación, donde resulte denunciado el ${cd.causante_nombre}, edad: ${cd.causante_edad}, Documento Nacional de Identidad N°: ${cd.causante_dni} en la víspera del ${fechaHechoHtml} o posteriores, en la arteria ${domicilioCausante}.`;
+                    mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: createWordRunsFromHtml(pItem1, window.docx) }));
+                    mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "2. Asimismo solicito informe la existencia de denuncias de igual tenor con respecto a Infracción con la Ley 12569.", font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "En caso de ser positivo solicito informe número de causa, carátula, estado actual de la misma y temperamento tomado para con el personal policial involucrado. Encarezco el resultado TÉRMINO MUY URGENTE.", font: "Arial", size: 22 })] }));
+                } else if (tabKey === 'col_cria_myf') {
+                    mainPars.push(new Paragraph({ spacing: { line: 360, after: 300 }, children: [new TextRun({ text: "AL SEÑOR/A SUPERINTENDENTE/A\nSUPERINTENDENCIA DE POLÍTICAS DE GÉNERO\nMINISTERIO DE SEGURIDAD", bold: true, font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Me dirijo a usted a los fines de solicitarle en el marco de ${cd.caratula_isa} donde se evalúa la conducta del ${cd.causante_nombre} ${cd.victima_nombre}, en trámite ante el ${cd.intervencion}, quiera tener a bien de realizar a través de los profesionales de sus equipos interdisciplinarios, a tenor de lo normado en el artículo 9 del Protocolo para el Abordaje, la Evaluación y el Tratamiento del Personal de las Policías de la Provincia de Buenos Aires en situaciones de Violencia de Género y Violencia Familiar, aprobado por la RESO-2021-581-GDEBA-MSGP, un informe de evaluación de riesgo y socio ambiental a la ciudadana/o:`, font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Nombre: ${cd.victima_nombre}, edad: ${cd.victima_edad}, Documento Nacional de Identidad N°: ${cd.victima_dni}, domicilio en: ${cd.victima_domicilio}, teléfono de contacto: ${cd.victima_contacto}.`, bold: true, font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "Que deberán ser comunicados en un plazo máximo de diez (10) días corridos, contados a partir del presente requerimiento, con copia a la Dirección Provincial de Políticas de Género y Derechos Humanos en los casos en que la PSVG/F sea personal policial.", font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Para mayor ilustración, se hace saber la síntesis del hecho descripto en la denuncia: ${cd.sintesis_relato}`, font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: "Asimismo Informe la existencia de denuncias anteriores con idéntica temática ante Comisaría MYF de jurisdicción. En caso de ser afirmativo aportar número de denuncia, número de Expediente GDEBA generado a raíz de cada uno de los hechos.", font: "Arial", size: 22 })] }));
+                } else if (tabKey === 'star_inf_anmac_repar') {
+                    mainPars.push(new Paragraph({ spacing: { line: 360, after: 300 }, children: [new TextRun({ text: "AL SEÑOR DIRECTOR\nREGISTRO PROVINCIAL DE ARMAS (R.E.P.A.R.)\nS / D", bold: true, font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Me dirijo a usted en el marco de las Actuaciones Sumariales Administrativas correspondientes al Expediente ${cd.caratula_isa}, en trámite ante el ${cd.intervencion}, a fin de solicitarle tenga a bien disponer las medidas necesarias para informar a esta Instrucción:`, font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Si el numerario policial ${cd.causante_nombre}, DNI N° ${cd.causante_dni}, con domicilio registrado en ${cd.causante_domicilio}, registra armamento de fuego debidamente asentado a su nombre ante el Registro Nacional de Armas (A.N.M.A.C.) y/o R.E.P.A.R., requiriéndose especificar tipo, marca, modelo, calibre y número de serie de la totalidad de las armas que pudieren figurar registradas.`, font: "Arial", size: 22 })] }));
+                } else if (tabKey === 'star_lep') {
+                    mainPars.push(new Paragraph({ spacing: { line: 360, after: 300 }, children: [new TextRun({ text: "AL SEÑOR DIRECTOR\nDIRECCIÓN DE PERSONAL - REGÍMENES POLICIALES\nSECCIÓN EXPEDIENTES E INFORMES PERSONAL", bold: true, font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Me dirijo a usted en el marco de las Actuaciones Sumariales Administrativas caratuladas ${cd.caratula_isa}, que se instruyen por ante el ${cd.intervencion}, a efectos de solicitarle tenga a bien remitir con carácter de URGENTE a esta Instrucción:`, font: "Arial", size: 22 })] }));
+                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: `Copia debidamente certificada y legible del Legajo Electrónico Personal (L.E.P.) y de la sábana de la Situación de Revista expedida por el Sistema Informático de Personal (S.I.P.P.) perteneciente al efectivo policial ${cd.causante_nombre}, DNI N° ${cd.causante_dni}, actualmente con destino en ${cd.causante_destino}.`, font: "Arial", size: 22 })] }));
+                }
+
+                mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: Math.round(1.25 * 566.929) }, spacing: { line: 360, before: 200, after: 300 }, children: [new TextRun({ text: "Lo expuesto es todo en cuanto solicito a usted.", font: "Arial", size: 22 })] }));
+
+                sections.push({
+                    properties: { page: { size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips } } },
+                    children: mainPars
+                });
+            }
+
+            const doc = new Document({
+                styles: {
+                    default: {
+                        document: {
+                            run: { font: "Arial", size: 22 }
+                        }
+                    }
+                },
+                sections
+            });
+            Packer.toBlob(doc).then(blob => saveAs(blob, `NOTA_${tabKey.toUpperCase()}.docx`));
+        }
+    </script>
+</body>
+</html>
