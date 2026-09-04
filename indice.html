@@ -97,7 +97,7 @@
             overflow: hidden;
         }
 
-        /* PANEL IZQUIERDO: FORMULARIO AGRUPADO CON TÍTULOS EXACTOS DEL ARCHIVO */
+        /* PANEL IZQUIERDO: FORMULARIO */
         .left-sidebar-form {
             width: 500px;
             background: var(--card-bg);
@@ -165,7 +165,7 @@
             box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); 
         }
 
-        /* PANEL DERECHO: VISTA PREVIA DEL DOCUMENTO */
+        /* PANEL DERECHO: VISTA PREVIA */
         .main-panel { 
             flex: 1; 
             padding: 16px; 
@@ -230,7 +230,7 @@
         .doc-body ol { padding-left: 1.25cm; margin-bottom: 1em; }
         .doc-body li { margin-bottom: 0.5em; text-align: justify; }
 
-        /* ESTILOS DE CARÁTULA AUTO-AJUSTABLE A 1 CARILLA */
+        /* ESTILOS DE CARÁTULA */
         .caratula-container-auto {
             display: flex;
             flex-direction: column;
@@ -327,7 +327,7 @@
     <!-- CONTENEDOR PRINCIPAL -->
     <div class="app-container">
         
-        <!-- PANEL IZQUIERDO: FORMULARIO CON NOMBRES Y GRUPOS EXACTOS -->
+        <!-- PANEL IZQUIERDO: FORMULARIO -->
         <div class="left-sidebar-form">
             <div class="sidebar-form-header">📝 1. CARGA DE DATOS COMPLETA</div>
             <div class="sidebar-form-content" id="tab-carga_datos">
@@ -445,7 +445,7 @@
             </div>
         </div>
 
-        <!-- PANEL DERECHO: VISTA PREVIA Y EXPORTACIÓN -->
+        <!-- PANEL DERECHO: VISTA PREVIA -->
         <div class="main-panel">
             
             <div class="card" id="card-desplegable-picker" style="display: none;">
@@ -476,7 +476,8 @@
     </div>
 
     <script>
-        const LOGO_HEADER_BASE64 = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='60' viewBox='0 0 400 60'><rect width='110' height='35' fill='%237FD1D6'/><text x='7' y='16' font-family='Arial' font-size='9' font-weight='bold' fill='white'>MINISTERIO DE</text><text x='7' y='27' font-family='Arial' font-size='9' font-weight='bold' fill='white'>SEGURIDAD</text><text x='200' y='18' font-family='Arial' font-size='10' font-weight='bold' fill='%23666666'>GOBIERNO DE LA PROVINCIA DE</text><text x='200' y='36' font-family='Arial' font-size='18' font-weight='900' fill='%2351C2D5'>BUENOS AIRES</text></svg>";
+        // LOGO SVG URL-ENCODED CORRECTAMENTE PARA GITHUB PAGES / WEBS
+        const LOGO_HEADER_BASE64 = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27400%27%20height%3D%2760%27%20viewBox%3D%270%200%20400%2060%27%3E%3Crect%20width%3D%27110%27%20height%3D%2735%27%20fill%3D%27%237FD1D6%27%2F%3E%3Ctext%20x%3D%277%27%20y%3D%2716%27%20font-family%3D%27Arial%27%20font-size%3D%279%27%20font-weight%3D%27bold%27%20fill%3D%27white%27%3EMINISTERIO%20DE%3C%2Ftext%3E%3Ctext%20x%3D%277%27%20y%3D%2727%27%20font-family%3D%27Arial%27%20font-size%3D%279%27%20font-weight%3D%27bold%27%20fill%3D%27white%27%3ESEGURIDAD%3C%2Ftext%3E%3Ctext%20x%3D%27200%27%20y%3D%2718%27%20font-family%3D%27Arial%27%20font-size%3D%2710%27%20font-weight%3D%27bold%27%20fill%3D%27%23666666%27%3EGOBIERNO%20DE%20LA%20PROVINCIA%20DE%3C%2Ftext%3E%3Ctext%20x%3D%27200%27%20y%3D%2736%27%20font-family%3D%27Arial%27%20font-size%3D%2718%27%20font-weight%3D%27900%27%20fill%3D%27%2351C2D5%27%3EBUENOS%20AIRES%3C%2Ftext%3E%3C%2Fsvg%3E";
 
         const listaDependenciasColumnaA = [
             "DIR. FUERZA BARRIAL DE APROX. (FBA)",
@@ -617,7 +618,6 @@
             return `OFL 123123 VICTIMA DEL HECHO`;
         }
 
-        /* FORMATO OBLIGATORIO DE FECHA: "10 de abril de 2026" */
         function getFechaNotaFormatted(bold = true) {
             const cd = appState.carga_datos;
             const dia = cd.f1_dia || '10';
@@ -636,7 +636,6 @@
             return bold ? `<b>${str}</b>` : str;
         }
 
-        /* OBTENER ENCABEZADO DE LUGAR Y FECHA CON FILA 4 PARTIDO (ej: "LA PLATA, 10 de abril de 2026") */
         function getLugarFechaEncabezado(bold = true) {
             const partidoFila4 = appState.carga_datos.f4_partido || 'LA PLATA';
             const fechaStr = getFechaNotaFormatted(bold);
@@ -736,7 +735,6 @@
             const logoHtml = `<div class="doc-header-logo"><img src="${LOGO_HEADER_BASE64}"></div>`;
 
             if (tabKey === 'caratula_doc') {
-                /* REEMPLAZADO "CARATULA N° ..." POR EL TEXTO DIRECTO DE FILA 52 */
                 const textoCaratulaCaja = cd.f52_caratula || '21100 - 082162/2026 - DN154527';
 
                 container.innerHTML = `
