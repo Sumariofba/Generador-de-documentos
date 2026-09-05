@@ -4,6 +4,7 @@
 <meta charset="UTF-8"> 
 <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
 <title>Generador Automático de Notas Sumariales PAR</title> 
+<!-- Librerías de exportación estables --> 
 <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script> 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script> 
 <style> 
@@ -274,8 +275,6 @@ input:focus, select:focus, textarea:focus {
   color: #000; 
   box-sizing: border-box; 
   position: relative; 
-  page-break-after: always;
-  break-after: page;
 } 
 .a4-page.caratula-page-fixed { 
   height: 297mm !important; 
@@ -353,8 +352,7 @@ input:focus, select:focus, textarea:focus {
     <div class="top-navbar-title">GENERADOR DE NOTAS SUMARIALES PAR</div> 
   </div> 
   <ul class="nav-list-top"> 
-    <li class="nav-item-top active" onclick="switchTab('todos_docs', this)">📑 VER TODOS LOS DOCUMENTOS (1 AL 9)</li> 
-    <li class="nav-item-top" onclick="switchTab('caratula_doc', this)">📄 2. Carátula</li> 
+    <li class="nav-item-top active" onclick="switchTab('caratula_doc', this)">📄 2. Carátula</li> 
     <li class="nav-item-top" onclick="switchTab('dto_recepcion', this)">📄 3. Dto. Recepción</li> 
     <li class="nav-item-top" onclick="switchTab('col_div', this)">📄 4. Col. DIV</li> 
     <li class="nav-item-top" onclick="switchTab('col_existencia_ipp', this)">📄 5. Col. Existencia IPP</li> 
@@ -511,9 +509,9 @@ input:focus, select:focus, textarea:focus {
     </div> 
     <div class="card"> 
       <div class="card-title"> 
-        <span id="note-preview-title">DOCUMENTOS GENERADOS</span> 
+        <span id="note-preview-title">DOCUMENTO GENERADO</span> 
         <div class="actions-bar"> 
-          <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir Vista Actual</button> 
+          <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir Documento</button> 
           <button class="btn btn-primary" onclick="downloadWordDocument()">📥 Descargar en Word (.docx)</button> 
         </div> 
       </div> 
@@ -605,7 +603,7 @@ const listaOpcionesDesplegableRaw = [
 
 let appState = { 
   carga_datos: {}, 
-  currentTab: "todos_docs", 
+  currentTab: "caratula_doc", 
   puntosSeleccionadosIndices: [0, 1, 4, 5] 
 }; 
 
@@ -748,7 +746,7 @@ function switchTab(tabKey, element) {
   if (element) element.classList.add('active'); 
   appState.currentTab = tabKey; 
   const pickerCard = document.getElementById('card-desplegable-picker'); 
-  pickerCard.style.display = (tabKey === 'col_div' || tabKey === 'todos_docs') ? 'block' : 'none'; 
+  pickerCard.style.display = (tabKey === 'col_div') ? 'block' : 'none'; 
   renderNotePreview(tabKey); 
 } 
 
@@ -819,7 +817,7 @@ function getSingleDocHtml(tabKey) {
   } 
 
   if (tabKey === 'decl_testimonial') { 
-    const textoCorridoDeclara = `En la localidad de <strong>${cd.f_proc_localidad || 'González Catán'}</strong>, partido de <strong>${cd.f_proc_partido || 'La Matanza'}</strong>, provincia de Buenos Aires, República Argentina, en el asiento físico de la <strong>${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}</strong>, sita en calle <strong>${cd.f_proc_dir_dependencia || 'San Matías (Ruta provincial 1001) sin número'}</strong>, entre calle <strong>${cd.f_proc_entre_calles || 'Achupallas y B. Llorente'}</strong> del mismo medio, a los <strong>${cd.f1_dia || '10'}</strong> días del mes de <strong>${(cd.f1_mes || 'abril').toLowerCase()}</strong> del año <strong>${cd.f1_anio || '2026'}</strong>, siendo las 16:58 horas, comparece ante el actuante y testigo de actuación, una persona previamente citada a los efectos de recibirle declaración Testimonial, a quien seguidamente se lo ENTERA Y NOTIFICA del contenido del Decreto Reglamentario 1050/09 de la Ley 13982; contenidos en el artículo 190 inc. “d”: “Son Faltas graves de competencia originaria de la Auditoría General de Asuntos Internos: las que dan lugar a sanción de exoneración, cesantía o suspensión del empleo sin goce de haberes de hasta sesenta (60) días, aplicables por resolución fundada en el marco de una investigación sumarial administrativa.”, y artículo 205 inciso “k” del mismo texto legal que reza: “Son faltas graves, que constituyen abuso funcional con intervención originaria de la Auditoría General de Asuntos Internos”, inciso “k”, que reza: “Afirmar una falsedad, negar o callar la verdad en todo o en parte, se relacione o no con actos del servicio, en las declaraciones, informes, diagnósticos, traducciones o interpretaciones que se presten como testigo, perito, intérprete del instructor o en cualquier otro carácter, cuando ello pudiera importar un perjuicio para terceros o para la administración de justicia, o en un proceso administrativo o actuación administrativa'. Asimismo, se lo pone en conocimiento del contenido del artículo 100 y 218 del Código Procesal Penal de la provincia de Buenos aires, que comprende y por ello bajo juramento o promesa de decir la verdad, manifiesta que se producirá en todo cuanto supiere, conociere y le fuera preguntado, de acuerdo con sus creencias o convicciones cívicas, con total veracidad, mediante la fórmula: “LO JURO”. Seguidamente se lo pone en conocimiento del contenido del artículo 275 y 276 del Código Penal de La Nación, donde se castiga el “Falso Testimonio”. Seguidamente conforme lo establecido en el artículo 240 del Código Procesal Penal de la Provincia de Buenos Aires, se le es preguntado por sus nombres, apellidos y demás circunstancias personales, manifestando ser y llamarse: <strong>${cd.f_dec_nombres || 'DECLARANTE'}</strong>, de <strong>${cd.f_dec_edad || '45'}</strong> años de edad, nacionalidad <strong>${cd.f_dec_nacionalidad || 'ARGENTINA'}</strong>, estado civil <strong>${cd.f_dec_estado_civil || 'SOLTERO'}</strong>, profesión u ocupación <strong>${cd.f_dec_profesion || 'EMPLEADO POLICIAL'}</strong>, instruido, domicilio en calle <strong>${cd.f_dec_domicilio || 'CALLE 1 N° 23'}</strong>, entre calle <strong>${cd.f_dec_entre_calles || 'CALLE 2 Y CALLE 3'}</strong> del mismo medio, Documento Nacional de Identidad Nº <strong>${cd.f_dec_dni || '45000123'}</strong>, que si exhibe, que si repite de memoria y que si retiene para sí en este acto. Acto seguido se le es preguntado para que exprese si se encuentra comprendido en lo tipificado en el Código Procesal Penal de la Provincia de Buenos Aires en artículo 234. 'prohibición de declarar', artículo 235. 'facultad de Abstención', por encontrarse comprendido en algún grado de parentesco y artículo 236. 'deber de Abstención' por su estado oficio o profesión del secreto profesional, manifiesta NO estar comprendido en las referidas prohibiciones, ni abstenciones. Que, preguntado para que diga si posee vínculo de parentesco o de interés con las mismas, como así también de cualquier otra circunstancia que sirva para apreciar su veracidad de sus dichos, manifiesta que NO. En consecuencia y acorde a lo normado en el artículo 101 del Código Procesal Penal de la provincia de Buenos Aires, seguidamente es invitado a manifestar respecto al hecho en cuestión por lo que seguidamente DECLARA: Que, resulta ser empleado de la Policía de la Provincia de Buenos Aires, ostentando en la actualidad la jerarquía de <strong>${cd.f_dec_jerarquia || 'OFICIAL'}</strong>, del escalafón <strong>${cd.f_dec_subescalafon || 'GENERAL'}</strong>, legajo personal N° <strong>${cd.f_dec_legajo || '123456'}</strong>, cumpliendo en la actualidad sus servicios en el <strong>${cd.f_dec_destino || 'DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)'}</strong>, como <strong>${cd.f_dec_funcion || 'DISPONIBLE'}</strong>. En la fecha, se hace presente a los fines de prestar declaración testimonial en <strong>${cd.f_caratula || '21100 - 082162/2026 - DN154527'}</strong>, donde se analiza la conducta del <strong>${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</strong>, en trámite ante <strong>${cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</strong>, incoadas el <strong>${fechaHechoHtml}</strong>. En esa inteligencia relata ${cd.f_dec_declara || ''}. Es todo cuanto declara al respecto. Por lo que no siendo para más el acto, previa e integra lectura que da por sí y no teniendo nada que quitar, tachar, corregir y/o enmendar, ratifica de todo su contenido, firmando al pie para constancia ante el suscripto que certifica todo lo actuado.`; 
+    const textoCorridoDeclara = `En la localidad de <strong>${cd.f_proc_localidad || 'González Catán'}</strong>, partido de <strong>${cd.f_proc_partido || 'La Matanza'}</strong>, provincia de Buenos Aires, República Argentina, en el asiento físico de la <strong>${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}</strong>, sita en calle <strong>${cd.f_proc_dir_dependencia || 'San Matías (Ruta provincial 1001) sin número'}</strong>, entre calle <strong>${cd.f_proc_entre_calles || 'Achupallas y B. Llorente'}</strong> del mismo medio, a los <strong>${cd.f1_dia || '10'}</strong> días del mes de <strong>${(cd.f1_mes || 'abril').toLowerCase()}</strong> del año <strong>${cd.f1_anio || '2026'}</strong>, siendo las 16:58 horas, comparece ante el actuante y testigo de actuación, una persona previamente citada a los efectos de recibirle declaración Testimonial, a quien seguidamente se lo ENTERA Y NOTIFICA del contenido del Decreto Reglamentario 1050/09 de la Ley 13982; contenidos en el artículo 190 inc. “d”: “Son Faltas graves de competencia originaria de la Auditoría General de Asuntos Internos: las que dan lugar a sanción de exoneración, cesantía o suspensión del empleo sin goce de haberes de hasta sesenta (60) días, aplicables por resolución fundada en el marco de una investigación sumarial administrativa.”, y artículo 205 inciso “k” del mismo texto legal que reza: “Son faltas graves, que constituyen abuso funcional con intervención originaria de la Auditoría General de Asuntos Internos”, inciso “k”, que reza: “Afirmar una falsedad, negar o callar la verdad en todo o en parte, se relacione o no con actos del servicio, en las declaraciones, informes, diagnósticos, traducciones o interpretaciones que se presten como testigo, perito, intérprete del instructor o en cualquier otro carácter, cuando ello pudiera importar un perjuicio para terceros o para la administración de justicia, o en un proceso administrativo o actuación administrativa'. Asimismo, se lo pone en conocimiento del contenido del artículo 100 y 218 del Código Procesal Penal de la provincia de Buenos aires, que comprende y por ello bajo juramento o promesa de decir la verdad, manifiesta que se producirá en todo cuanto supiere, conociere y le fuera preguntado, de acuerdo con sus creencias o convicciones cívicas, con total veracidad, mediante la fórmula: “LO JURO”. Seguidamente se lo pone en conocimiento del contenido del artículo 275 y 276 del Código Penal de La Nación, donde se castiga el “Falso Testimonio”. Seguidamente conforme lo establishedo en el artículo 240 del Código Procesal Penal de la Provincia de Buenos Aires, se le es preguntado por sus nombres, apellidos y demás circunstancias personales, manifestando ser y llamarse: <strong>${cd.f_dec_nombres || 'DECLARANTE'}</strong>, de <strong>${cd.f_dec_edad || '45'}</strong> años de edad, nacionalidad <strong>${cd.f_dec_nacionalidad || 'ARGENTINA'}</strong>, estado civil <strong>${cd.f_dec_estado_civil || 'SOLTERO'}</strong>, profesión u ocupación <strong>${cd.f_dec_profesion || 'EMPLEADO POLICIAL'}</strong>, instruido, domicilio en calle <strong>${cd.f_dec_domicilio || 'CALLE 1 N° 23'}</strong>, entre calle <strong>${cd.f_dec_entre_calles || 'CALLE 2 Y CALLE 3'}</strong> del mismo medio, Documento Nacional de Identidad Nº <strong>${cd.f_dec_dni || '45000123'}</strong>, que si exhibe, que si repite de memoria y que si retiene para sí en este acto. Acto seguido se le es preguntado para que exprese si se encuentra comprendido en lo tipificado en el Código Procesal Penal de la Provincia de Buenos Aires en artículo 234. 'prohibición de declarar', artículo 235. 'facultad de Abstención', por encontrarse comprendido en algún grado de parentesco y artículo 236. 'deber de Abstención' por su estado oficio o profesión del secreto profesional, manifiesta NO estar comprendido en las referidas prohibiciones, ni abstenciones. Que, preguntado para que diga si posee vínculo de parentesco o de interés con las mismas, como así también de cualquier otra circunstancia que sirva para apreciar su veracidad de sus dichos, manifiesta que NO. En consecuencia y acorde a lo normado en el artículo 101 del Código Procesal Penal de la provincia de Buenos Aires, seguidamente es invitado a manifestar respecto al hecho en cuestión por lo que seguidamente DECLARA: Que, resulta ser empleado de la Policía de la Provincia de Buenos Aires, ostentando en la actualidad la jerarquía de <strong>${cd.f_dec_jerarquia || 'OFICIAL'}</strong>, del escalafón <strong>${cd.f_dec_subescalafon || 'GENERAL'}</strong>, legajo personal N° <strong>${cd.f_dec_legajo || '123456'}</strong>, cumpliendo en la actualidad sus servicios en el <strong>${cd.f_dec_destino || 'DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)'}</strong>, como <strong>${cd.f_dec_funcion || 'DISPONIBLE'}</strong>. En la fecha, se hace presente a los fines de prestar declaración testimonial en <strong>${cd.f_caratula || '21100 - 082162/2026 - DN154527'}</strong>, donde se analiza la conducta del <strong>${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</strong>, en trámite ante <strong>${cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</strong>, incoadas el <strong>${fechaHechoHtml}</strong>. En esa intelligence relata ${cd.f_dec_declara || ''}. Es todo cuanto declara al respecto. Por lo que no siendo para más el acto, previa e integra lectura que da por sí y no teniendo nada que quitar, tachar, corregir y/o enmendar, ratifica de todo su contenido, firmando al pie para constancia ante el suscripto que certifica todo lo actuado.`; 
     
     return ` 
       <div class="a4-page auto-flow-page"> 
@@ -937,27 +935,7 @@ function getSingleDocHtml(tabKey) {
 
 function renderNotePreview(tabKey) { 
   const container = document.getElementById('doc-preview-wrapper-container'); 
-  const allDocKeys = [ 
-    'caratula_doc', 
-    'dto_recepcion', 
-    'col_div', 
-    'col_existencia_ipp', 
-    'star_existencia_cautelares', 
-    'col_cria_myf', 
-    'star_inf_anmac_repar', 
-    'star_lep', 
-    'decl_testimonial' 
-  ]; 
-
-  if (tabKey === 'todos_docs') { 
-    let combinedHtml = ''; 
-    allDocKeys.forEach(key => { 
-      combinedHtml += getSingleDocHtml(key); 
-    }); 
-    container.innerHTML = combinedHtml; 
-  } else { 
-    container.innerHTML = getSingleDocHtml(tabKey); 
-  } 
+  container.innerHTML = getSingleDocHtml(tabKey); 
 } 
 
 function getDocxLibrary() { 
@@ -989,9 +967,9 @@ function downloadWordDocument() {
     alert("Error: La librería 'docx' no se cargó correctamente."); 
     return; 
   } 
-  const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, Header } = docxLib; 
+  const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = docxLib; 
   const cd = appState.carga_datos; 
-  const tabKey = appState.currentTab; 
+  const key = appState.currentTab; 
 
   const topMarginTwips = Math.round(5.0 * 566.929); 
   const bottomMarginTwips = Math.round(2.5 * 566.929); 
@@ -1007,112 +985,104 @@ function downloadWordDocument() {
     right: { style: BorderStyle.NONE, size: 0, color: "auto" }, 
   }; 
 
-  const allDocKeys = (tabKey === 'todos_docs') ? [ 
-    'caratula_doc', 'dto_recepcion', 'col_div', 'col_existencia_ipp', 
-    'star_existencia_cautelares', 'col_cria_myf', 'star_inf_anmac_repar', 
-    'star_lep', 'decl_testimonial' 
-  ] : [tabKey]; 
-
   const sections = []; 
 
-  allDocKeys.forEach(key => { 
-    if (key === 'caratula_doc') { 
-      const caratulaData = [ 
-        ["EXPEDIENTE ELECTRONICO:", cd.f_exp_elec || 'EX-2026-16420475- -GDEBA-DDPRYGEMSGP'], 
-        ["FECHA DEL HECHO:", getFechaHechoFormatted(false)], 
-        ["CAUSANTE:", cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'], 
-        ["DESTINO DEL CAUSANTE:", cd.f_imp_destino || 'DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)'], 
-        ["CTROL. DISCIPLINARIO INTERV.:", cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'], 
-        ["INSTRUCTOR:", cd.f_proc_instructor || 'COMISARIO MAYOR (CDO.) HERNAN ABEL BIANDIN'], 
-        ["SECRETARIO DE ACTUACION:", cd.f_proc_secretario || 'OFICIAL SUBAYUDANTE (CDO.) FLORENCIA MILENA ZALAZAR'], 
-        ["DEPENDENCIA INSTRUCTORA:", cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'] 
-      ]; 
-      const gridRows = caratulaData.map(([lbl, val]) => { 
-        return new TableRow({ 
-          children: [ 
-            new TableCell({ 
-              width: { size: 40, type: WidthType.PERCENTAGE }, 
-              borders: noBorder, 
-              children: [new Paragraph({ spacing: { before: 180, after: 180 }, children: [new TextRun({ text: lbl, bold: true, underline: {}, size: 22, font: "Arial" })] })] 
-            }), 
-            new TableCell({ 
-              width: { size: 60, type: WidthType.PERCENTAGE }, 
-              borders: noBorder, 
-              children: [new Paragraph({ spacing: { before: 180, after: 180 }, children: [new TextRun({ text: val, bold: true, size: 22, font: "Arial" })] })] 
-            }) 
-          ] 
-        }); 
-      }); 
-      sections.push({ 
-        properties: { 
-          page: { 
-            size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, 
-            margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips } 
-          } 
-        }, 
+  if (key === 'caratula_doc') { 
+    const caratulaData = [ 
+      ["EXPEDIENTE ELECTRONICO:", cd.f_exp_elec || 'EX-2026-16420475- -GDEBA-DDPRYGEMSGP'], 
+      ["FECHA DEL HECHO:", getFechaHechoFormatted(false)], 
+      ["CAUSANTE:", cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'], 
+      ["DESTINO DEL CAUSANTE:", cd.f_imp_destino || 'DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)'], 
+      ["CTROL. DISCIPLINARIO INTERV.:", cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'], 
+      ["INSTRUCTOR:", cd.f_proc_instructor || 'COMISARIO MAYOR (CDO.) HERNAN ABEL BIANDIN'], 
+      ["SECRETARIO DE ACTUACION:", cd.f_proc_secretario || 'OFICIAL SUBAYUDANTE (CDO.) FLORENCIA MILENA ZALAZAR'], 
+      ["DEPENDENCIA INSTRUCTORA:", cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'] 
+    ]; 
+    const gridRows = caratulaData.map(([lbl, val]) => { 
+      return new TableRow({ 
         children: [ 
-          new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 100, after: 300 }, children: [new TextRun({ text: "ACTUACION SUMARIAL ADMINISTRATIVA", bold: true, size: 28, font: "Arial" })] }), 
-          new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ children: [new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 150, after: 150 }, children: [new TextRun({ text: `${cd.f_caratula || '21100 - 082162/2026 - DN154527'}`, bold: true, size: 26, font: "Arial" })] })] })] })] }), 
-          new Paragraph({ spacing: { after: 300 } }), 
-          new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: gridRows }) 
+          new TableCell({ 
+            width: { size: 40, type: WidthType.PERCENTAGE }, 
+            borders: noBorder, 
+            children: [new Paragraph({ spacing: { before: 180, after: 180 }, children: [new TextRun({ text: lbl, bold: true, underline: {}, size: 22, font: "Arial" })] })] 
+          }), 
+          new TableCell({ 
+            width: { size: 60, type: WidthType.PERCENTAGE }, 
+            borders: noBorder, 
+            children: [new Paragraph({ spacing: { before: 180, after: 180 }, children: [new TextRun({ text: val, bold: true, size: 22, font: "Arial" })] })] 
+          }) 
         ] 
       }); 
-    } else if (key === 'decl_testimonial') { 
-      const fechaHechoHtml = getFechaHechoFormatted(true); 
-      const textoCorridoDeclara = `En la localidad de <b>${cd.f_proc_localidad || 'González Catán'}</b>, partido de <b>${cd.f_proc_partido || 'La Matanza'}</b>, provincia de Buenos Aires, República Argentina, en el asiento físico de la <b>${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}</b>, sita en calle <b>${cd.f_proc_dir_dependencia || 'San Matías (Ruta provincial 1001) sin número'}</b>, entre calle <b>${cd.f_proc_entre_calles || 'Achupallas y B. Llorente'}</b> del mismo medio, a los <b>${cd.f1_dia || '10'}</b> días del mes de <b>${(cd.f1_mes || 'abril').toLowerCase()}</b> del año <b>${cd.f1_anio || '2026'}</b>, siendo las 16:58 horas, comparece ante el actuante y testigo de actuación, una persona previamente citada a los efectos de recibirle declaración Testimonial, a quien seguidamente se lo ENTERA Y NOTIFICA del contenido del Decreto Reglamentario 1050/09 de la Ley 13982; contenidos en el artículo 190 inc. “d”: “Son Faltas graves de competencia originaria de la Auditoría General de Asuntos Internos: las que dan lugar a sanción de exoneración, cesantía o suspensión del empleo sin goce de haberes de hasta sesenta (60) días, aplicables por resolución fundada en el marco de una investigación sumarial administrativa.”, y artículo 205 inciso “k” del mismo texto legal que reza: “Son faltas graves, que constituyen abuso funcional con intervención originaria de la Auditoría General de Asuntos Internos”, inciso “k”, que reza: “Afirmar una falsedad, negar o callar la verdad en todo o en parte, se relacione o no con actos del servicio, en las declaraciones, informes, diagnósticos, traducciones o interpretaciones que se presten como testigo, perito, intérprete del instructor o en cualquier otro carácter, cuando ello pudiera importar un perjuicio para terceros o para la administración de justicia, o en un proceso administrativo o actuación administrativa'. Asimismo, se lo pone en conocimiento del contenido del artículo 100 y 218 del Código Procesal Penal de la provincia de Buenos aires, que comprende y por ello bajo juramento o promesa de decir la verdad, manifiesta que se producirá en todo cuanto supiere, conociere y le fuera preguntado, de acuerdo con sus creencias o convicciones cívicas, con total veracidad, mediante la fórmula: “LO JURO”. Seguidamente se lo pone en conocimiento del contenido del artículo 275 y 276 del Código Penal de La Nación, donde se castiga el “Falso Testimonio”. Seguidamente conforme lo establecido en el artículo 240 del Código Procesal Penal de la Provincia de Buenos Aires, se le es preguntado por sus nombres, apellidos y demás circunstancias personales, manifestando ser y llamarse: <b>${cd.f_dec_nombres || 'DECLARANTE'}</b>, de <b>${cd.f_dec_edad || '45'}</b> años de edad, nacionalidad <b>${cd.f_dec_nacionalidad || 'ARGENTINA'}</b>, estado civil <b>${cd.f_dec_estado_civil || 'SOLTERO'}</b>, profesión u ocupación <b>${cd.f_dec_profesion || 'EMPLEADO POLICIAL'}</b>, instruido, domicilio en calle <b>${cd.f_dec_domicilio || 'CALLE 1 N° 23'}</b>, entre calle <b>${cd.f_dec_entre_calles || 'CALLE 2 Y CALLE 3'}</b> del mismo medio, Documento Nacional de Identidad Nº <b>${cd.f_dec_dni || '45000123'}</b>, que si exhibe, que si repite de memoria y que si retiene para sí en este acto. Acto seguido se le es preguntado para que exprese si se encuentra comprendido en lo tipificado en el Código Procesal Penal de la Provincia de Buenos Aires en artículo 234. 'prohibición de declarar', artículo 235. 'facultad de Abstención', por encontrarse comprendido en algún grado de parentesco y artículo 236. 'deber de Abstención' por su estado oficio o profesión del secreto profesional, manifiesta NO estar comprendido en las referidas prohibiciones, ni abstenciones. Que, preguntado para que diga si posee vínculo de parentesco o de interés con las mismas, como así también de cualquier otra circunstancia que sirva para apreciar su veracidad de sus dichos, manifiesta que NO. En consecuencia y acorde a lo normado en el artículo 101 del Código Procesal Penal de la provincia de Buenos Aires, seguidamente es invitado a manifestar respecto al hecho en cuestión por lo que seguidamente DECLARA: Que, resulta ser empleado de la Policía de la Provincia de Buenos Aires, ostentando en la actualidad la jerarquía de <b>${cd.f_dec_jerarquia || 'OFICIAL'}</b>, del escalafón <b>${cd.f_dec_subescalafon || 'GENERAL'}</b>, legajo personal N° <b>${cd.f_dec_legajo || '123456'}</b>, cumpliendo en la actualidad sus servicios en el <b>${cd.f_dec_destino || 'DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)'}</b>, como <b>${cd.f_dec_funcion || 'DISPONIBLE'}</b>. En la fecha, se hace presente a los fines de prestar declaración testimonial en <b>${cd.f_caratula || '21100 - 082162/2026 - DN154527'}</b>, donde se analiza la conducta del <b>${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</b>, en trámite ante <b>${cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</b>, incoadas el <b>${fechaHechoHtml}</b>. En esa inteligencia relata ${cd.f_dec_declara || ''}. Es todo cuanto declara al respecto. Por lo que no siendo para más el acto, previa e integra lectura que da por sí y no teniendo nada que quitar, tachar, corregir y/o enmendar, ratifica de todo su contenido, firmando al pie para constancia ante el suscripto que certifica todo lo actuado.`; 
-
-      sections.push({ 
-        properties: { 
-          page: { 
-            size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, 
-            margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips } 
-          } 
-        }, 
-        children: [ 
-          new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 100, after: 300 }, children: [new TextRun({ text: "DECLARACIÓN TESTIMONIAL", bold: true, size: 26, font: "Arial" })] }), 
-          new Paragraph({ alignment: AlignmentType.JUSTIFY, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(textoCorridoDeclara) }) 
-        ] 
-      }); 
-    } else { 
-      const lugarFechaHeaderWord = getLugarFechaEncabezado(true); 
-      const mainPars = [ 
-        new Paragraph({ alignment: AlignmentType.LEFT, indent: { left: mitadPaginaTwips }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(lugarFechaHeaderWord) }) 
-      ]; 
-
-      if (key === 'col_div') { 
-        mainPars.push(new Paragraph({ spacing: { line: 360, after: 250 }, children: [new TextRun({ text: `AL SEÑOR JEFE\n${cd.f_dest_dirigida_a}`, bold: true, font: "Arial", size: 22 })] })); 
-        mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(`Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.f_caratula} en trámite ante ${cd.f_intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:`) })); 
-        appState.puntosSeleccionadosIndices.forEach((rawIdx, listIdx) => { 
-          const raw = listaOpcionesDesplegableRaw[rawIdx]; 
-          const pointFormattedHtml = `${listIdx + 1}. ${formatPointText(raw, true)}`; 
-          mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: createWordRunsFromHtml(pointFormattedHtml) })); 
-        }); 
-        mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, before: 200, after: 300 }, children: [new TextRun({ text: "Lo expuesto es todo en cuanto solicito a usted.", font: "Arial", size: 22 })] })); 
-      } else { 
-        const tempDiv = document.createElement('div'); 
-        tempDiv.innerHTML = getSingleDocHtml(key); 
-        const pNodes = tempDiv.querySelectorAll('.doc-body p'); 
-        if (pNodes.length > 0) { 
-          pNodes.forEach(pNode => { 
-            mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(pNode.innerHTML) })); 
-          }); 
-        } else { 
-          const plainText = tempDiv.querySelector('.doc-body')?.innerText || ""; 
-          mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: plainText, font: "Arial", size: 22 })] })); 
+    }); 
+    sections.push({ 
+      properties: { 
+        page: { 
+          size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, 
+          margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips } 
         } 
-      } 
+      }, 
+      children: [ 
+        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 100, after: 300 }, children: [new TextRun({ text: "ACTUACION SUMARIAL ADMINISTRATIVA", bold: true, size: 28, font: "Arial" })] }), 
+        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ children: [new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 150, after: 150 }, children: [new TextRun({ text: `${cd.f_caratula || '21100 - 082162/2026 - DN154527'}`, bold: true, size: 26, font: "Arial" })] })] })] })] }), 
+        new Paragraph({ spacing: { after: 300 } }), 
+        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: gridRows }) 
+      ] 
+    }); 
+  } else if (key === 'decl_testimonial') { 
+    const fechaHechoHtml = getFechaHechoFormatted(true); 
+    const textoCorridoDeclara = `En la localidad de <b>${cd.f_proc_localidad || 'González Catán'}</b>, partido de <b>${cd.f_proc_partido || 'La Matanza'}</b>, provincia de Buenos Aires, República Argentina, en el asiento físico de la <b>${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}</b>, sita en calle <b>${cd.f_proc_dir_dependencia || 'San Matías (Ruta provincial 1001) sin número'}</b>, entre calle <b>${cd.f_proc_entre_calles || 'Achupallas y B. Llorente'}</b> del mismo medio, a los <b>${cd.f1_dia || '10'}</b> días del mes de <b>${(cd.f1_mes || 'abril').toLowerCase()}</b> del año <b>${cd.f1_anio || '2026'}</b>, siendo las 16:58 horas, comparece ante el actuante y testigo de actuación, una persona previamente citada a los efectos de recibirle declaración Testimonial, a quien seguidamente se lo ENTERA Y NOTIFICA del contenido del Decreto Reglamentario 1050/09 de la Ley 13982; contenidos en el artículo 190 inc. “d”: “Son Faltas graves de competencia originaria de la Auditoría General de Asuntos Internos: las que dan lugar a sanción de exoneración, cesantía o suspensión del empleo sin goce de haberes de hasta sesenta (60) días, aplicables por resolución fundada en el marco de una investigación sumarial administrativa.”, y artículo 205 inciso “k” del mismo texto legal que reza: “Son faltas graves, que constituyen abuso funcional con intervención originaria de la Auditoría General de Asuntos Internos”, inciso “k”, que reza: “Afirmar una falsedad, negar o callar la verdad en todo o en parte, se relacione o no con actos del servicio, en las declaraciones, informes, diagnósticos, traducciones o interpretaciones que se presten como testigo, perito, intérprete del instructor o en cualquier otro carácter, cuando ello pudiera importar un perjudico para terceros o para la administración de justicia, o en un proceso administrativo o actuación administrativa'. Asimismo, se lo pone en conocimiento del contenido del artículo 100 y 218 del Código Procesal Penal de la provincia de Buenos aires, que comprende y por ello bajo juramento o promesa de decir la verdad, manifiesta que se producirá en todo cuanto supiere, conociere y le fuera preguntado, de acuerdo con sus creencias o convicciones cívicas, con total veracidad, mediante la fórmula: “LO JURO”. Seguidamente se lo pone en conocimiento del contenido del artículo 275 y 276 del Código Penal de La Nación, donde se castiga el “Falso Testimonio”. Seguidamente conforme lo establecido en el artículo 240 del Código Procesal Penal de la Provincia de Buenos Aires, se le es preguntado por sus nombres, apellidos y demás circunstancias personales, manifestando ser y llamarse: <b>${cd.f_dec_nombres || 'DECLARANTE'}</b>, de <b>${cd.f_dec_edad || '45'}</b> años de edad, nacionalidad <b>${cd.f_dec_nacionalidad || 'ARGENTINA'}</b>, estado civil <b>${cd.f_dec_estado_civil || 'SOLTERO'}</b>, profesión u ocupación <b>${cd.f_dec_profesion || 'EMPLEADO POLICIAL'}</b>, instruido, domicilio en calle <b>${cd.f_dec_domicilio || 'CALLE 1 N° 23'}</b>, entre calle <b>${cd.f_dec_entre_calles || 'CALLE 2 Y CALLE 3'}</b> del mismo medio, Documento Nacional de Identidad Nº <b>${cd.f_dec_dni || '45000123'}</b>, que si exhibe, que si repite de memoria y que si retiene para sí en este acto. Acto seguido se le es preguntado para que exprese si se encuentra comprendido en lo tipificado en el Código Procesal Penal de la Provincia de Buenos Aires en artículo 234. 'prohibición de declarar', artículo 235. 'facultad de Abstención', por encontrarse comprendido en algún grado de parentesco y artículo 236. 'deber de Abstención' por su estado oficio o profesión del secreto profesional, manifiesta NO estar comprendido en las referidas prohibiciones, ni abstenciones. Que, preguntado para que diga si posee vínculo de parentesco o de interés con las mismas, como así también de cualquier otra circunstancia que sirva para apreciar su veracidad de sus dichos, manifiesta que NO. En consecuencia y acorde a lo normado en el artículo 101 del Código Procesal Penal de la provincia de Buenos Aires, seguidamente es invitado a manifestar respecto al hecho en cuestión por lo que seguidamente DECLARA: Que, resulta ser empleado de la Policía de la Provincia de Buenos Aires, ostentando en la actualidad la jerarquía de <b>${cd.f_dec_jerarquia || 'OFICIAL'}</b>, del escalafón <b>${cd.f_dec_subescalafon || 'GENERAL'}</b>, legajo personal N° <b>${cd.f_dec_legajo || '123456'}</b>, cumpliendo en la actualidad sus servicios en el <b>${cd.f_dec_destino || 'DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)'}</b>, como <b>${cd.f_dec_funcion || 'DISPONIBLE'}</b>. En la fecha, se hace presente a los fines de prestar declaración testimonial en <b>${cd.f_caratula || '21100 - 082162/2026 - DN154527'}</b>, donde se analiza la conducta del <b>${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</b>, en trámite ante <b>${cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</b>, incoadas el <b>${fechaHechoHtml}</b>. En esa inteligencia relata ${cd.f_dec_declara || ''}. Es todo cuanto declara al respecto. Por lo que no siendo para más el acto, previa e integra lectura que da por sí y no teniendo nada que quitar, tachar, corregir y/o enmendar, ratifica de todo su contenido, firmando al pie para constancia ante el suscripto que certifica todo lo actuado.`; 
 
-      sections.push({ 
-        properties: { 
-          page: { 
-            size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, 
-            margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips } 
-          } 
-        }, 
-        children: mainPars 
+    sections.push({ 
+      properties: { 
+        page: { 
+          size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, 
+          margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips } 
+        } 
+      }, 
+      children: [ 
+        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 100, after: 300 }, children: [new TextRun({ text: "DECLARACIÓN TESTIMONIAL", bold: true, size: 26, font: "Arial" })] }), 
+        new Paragraph({ alignment: AlignmentType.JUSTIFY, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(textoCorridoDeclara) }) 
+      ] 
+    }); 
+  } else { 
+    const lugarFechaHeaderWord = getLugarFechaEncabezado(true); 
+    const mainPars = [ 
+      new Paragraph({ alignment: AlignmentType.LEFT, indent: { left: mitadPaginaTwips }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(lugarFechaHeaderWord) }) 
+    ]; 
+
+    if (key === 'col_div') { 
+      mainPars.push(new Paragraph({ spacing: { line: 360, after: 250 }, children: [new TextRun({ text: `AL SEÑOR JEFE\n${cd.f_dest_dirigida_a}`, bold: true, font: "Arial", size: 22 })] })); 
+      mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(`Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.f_caratula} en trámite ante ${cd.f_intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:`) })); 
+      appState.puntosSeleccionadosIndices.forEach((rawIdx, listIdx) => { 
+        const raw = listaOpcionesDesplegableRaw[rawIdx]; 
+        const pointFormattedHtml = `${listIdx + 1}. ${formatPointText(raw, true)}`; 
+        mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: createWordRunsFromHtml(pointFormattedHtml) })); 
       }); 
+      mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, before: 200, after: 300 }, children: [new TextRun({ text: "Lo expuesto es todo en cuanto solicito a usted.", font: "Arial", size: 22 })] })); 
+    } else { 
+      const tempDiv = document.createElement('div'); 
+      tempDiv.innerHTML = getSingleDocHtml(key); 
+      const pNodes = tempDiv.querySelectorAll('.doc-body p'); 
+      if (pNodes.length > 0) { 
+        pNodes.forEach(pNode => { 
+          mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(pNode.innerHTML) })); 
+        }); 
+      } else { 
+        const plainText = tempDiv.querySelector('.doc-body')?.innerText || ""; 
+        mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: plainText, font: "Arial", size: 22 })] })); 
+      } 
     } 
-  }); 
+
+    sections.push({ 
+      properties: { 
+        page: { 
+          size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, 
+          margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips } 
+        } 
+      }, 
+      children: mainPars 
+    }); 
+  } 
 
   const doc = new Document({ 
     styles: { default: { document: { run: { font: "Arial", size: 22 } } } }, 
@@ -1120,7 +1090,7 @@ function downloadWordDocument() {
   }); 
 
   Packer.toBlob(doc).then(blob => { 
-    saveAs(blob, `NOTAS_SUMARIALES_${tabKey.toUpperCase()}.docx`); 
+    saveAs(blob, `NOTA_${key.toUpperCase()}.docx`); 
   }).catch(err => { 
     console.error(err); 
     alert("Error al generar el archivo Word: " + err.message); 
