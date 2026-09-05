@@ -69,6 +69,8 @@
         .doc-preview-wrapper { background: #64748b; padding: 20px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 15px; overflow-x: auto; }
         .a4-page { background: white; width: 210mm; min-height: 297mm; padding-top: 2.5cm; padding-bottom: 2.5cm; padding-left: 4cm; padding-right: 1.5cm; box-shadow: 0 10px 25px rgba(0,0,0,0.3); font-size: 11pt; line-height: 1.45; color: #000; box-sizing: border-box; position: relative; }
         .a4-page.caratula-page-fixed { height: 297mm !important; overflow: hidden; }
+        .a4-page.auto-flow-page { min-height: auto !important; height: auto !important; overflow: visible !important; }
+        
         .doc-header-logo { text-align: left; margin-bottom: 0.3cm; }
         .doc-header-logo img { max-height: 60px; width: auto; object-fit: contain; }
         .doc-mid-section { margin-left: 40%; width: 60%; margin-bottom: 1.2em; }
@@ -89,6 +91,14 @@
         .caratula-value { font-weight: bold; }
         .page-break { page-break-before: always; margin-top: 30px; }
         
+        /* REGLAS DE ENCABEZADO ALTERNADO PARA PÁGINAS IMPARES Y PARES */
+        .multi-page-container .a4-page:nth-of-type(even) .doc-header-logo {
+            display: none !important;
+        }
+        .multi-page-container .a4-page:nth-of-type(odd) .doc-header-logo {
+            display: block !important;
+        }
+
         @media print {
             body { background: white !important; overflow: visible !important; height: auto !important; }
             .top-navbar, .left-sidebar-form, .card-title, .actions-bar, #card-desplegable-picker, #note-preview-title { display: none !important; }
@@ -98,6 +108,16 @@
             .doc-preview-wrapper { background: white !important; padding: 0 !important; gap: 0 !important; overflow: visible !important; }
             .a4-page { width: 100% !important; box-shadow: none !important; padding-top: 2.5cm !important; padding-bottom: 2.5cm !important; padding-left: 4cm !important; padding-right: 1.5cm !important; margin: 0 !important; display: block !important; page-break-after: always; }
             .a4-page.caratula-page-fixed { height: 297mm !important; }
+            .a4-page.auto-flow-page { min-height: auto !important; height: auto !important; page-break-after: auto !important; }
+            
+            /* REGLAS IMPRESIÓN PÁGINAS PARES / IMPARES */
+            .multi-page-container .a4-page:nth-of-type(even) .doc-header-logo {
+                display: none !important;
+            }
+            .multi-page-container .a4-page:nth-of-type(odd) .doc-header-logo {
+                display: block !important;
+            }
+
             @page { size: A4; margin: 0; }
         }
     </style>
@@ -343,7 +363,7 @@
             "Adune informe de Comportamiento y Seguimiento tanto en la faz laboral por parte del superior directo del OFL 123123 IMPUTADO DEL HECHO",
             "Informe si el efectivo usufructuó licencia médica por el evento en estudio, debiéndose adunar copia certificada y legible del sistema informatico (SIPP) resaltando las que correspondan al hecho en pesquisa.",
             "Copia certificada y legible de denuncia de accidente de trabajo o enfermedad profesional a la Asegurador Provincia A.R.T del lesionado.",
-            "Declaración testimonial al OFL 123123 IMPUTADO DEL HECHO bajo juramento de decir la verdad donde narre el recorrido habitual que realiza habitualmente desde el domicilio al lugar donde presta servicio acompañado con croquis ilustrativo señalando el domicilio declared del agente, lugar del siniestro y lugar de trabajo",
+            "Declaración testimonial al OFL 123123 IMPUTADO DEL HECHO bajo juramento de decir la verdad donde narre el recorrido habitual que realiza habitualmente desde el domicilio al lugar donde presta servicio acompañado con croquis ilustrativo señalando el domicilio declarado del agente, lugar del siniestro y lugar de trabajo",
             "Adune copia certificada y legible de orden de servicio vigente al momento de los hechos en investigación.",
             "Realice informe existencia de Procesos Penales vinculados a los presentes actuados. En caso de ser positivo informe número de causa, caratula, magistrado interviniente, estado en el que se encuentra y temperamento legal adoptado para con el personal policial interviniente.",
             "Copia certificada y legible de CONSTANCIA DE ALTA/ FIN DE TRATAMIENTO de la Aseguradora de Riesgos del Trabajo (A.R.T.) del OFL 123123 VICTIMA DEL HECHO",
@@ -615,28 +635,20 @@
             }
 
             if (tabKey === 'decl_testimonial') {
+                const textoCorridoDeclara = `En la localidad de <strong>${cd.f_proc_localidad || 'González Catán'}</strong>, partido de <strong>${cd.f_proc_partido || 'La Matanza'}</strong>, provincia de Buenos Aires, República Argentina, en el asiento físico de la <strong>${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}</strong>, sita en calle <strong>${cd.f_proc_dir_dependencia || 'San Matías (Ruta provincial 1001) sin número'}</strong>, entre calle <strong>${cd.f_proc_entre_calles || 'Achupallas y B. Llorente'}</strong> del mismo medio, a los <strong>${cd.f1_dia || '10'}</strong> días del mes de <strong>${(cd.f1_mes || 'abril').toLowerCase()}</strong> del año <strong>${cd.f1_anio || '2026'}</strong>, siendo las 16:58 horas, comparece ante el actuante y testigo de actuación, una persona previamente citada a los efectos de recibirle declaración Testimonial, a quien seguidamente se lo ENTERA Y NOTIFICA del contenido del Decreto Reglamentario 1050/09 de la Ley 13982; contenidos en el artículo 190 inc. “d”: “Son Faltas graves de competencia originaria de la Auditoría General de Asuntos Internos: las que dan lugar a sanción de exoneración, cesantía o suspensión del empleo sin goce de haberes de hasta sesenta (60) días, aplicables por resolución fundada en el marco de una investigación sumarial administrativa.”, y artículo 205 inciso “k” del mismo texto legal que reza: “Son faltas graves, que constituyen abuso funcional con intervención originaria de la Auditoría General de Asuntos Internos”, inciso “k”, que reza: “Afirmar una falsedad, negar o callar la verdad en todo o en parte, se relacione o no con actos del servicio, en las declaraciones, informes, diagnósticos, traducciones o interpretaciones que se presten como testigo, perito, intérprete del instructor o en cualquier otro carácter, cuando ello pudiera importar un perjuicio para terceros o para la administración de justicia, o en un proceso administrativo o actuación administrativa'. Asimismo, se lo pone en conocimiento del contenido del artículo 100 y 218 del Código Procesal Penal de la provincia de Buenos aires, que comprende y por ello bajo juramento o promesa de decir la verdad, manifiesta que se producirá en todo cuanto supiere, conociere y le fuera preguntado, de acuerdo con sus creencias o convicciones cívicas, con total veracidad, mediante la fórmula: “LO JURO”. Seguidamente se lo pone en conocimiento del contenido del artículo 275 y 276 del Código Penal de La Nación, donde se castiga el “Falso Testimonio”. Seguidamente conforme lo established en el artículo 240 del Código Procesal Penal de la Provincia de Buenos Aires, se le es preguntado por sus nombres, apellidos y demás circunstancias personales, manifestando ser y llamarse: <strong>${cd.f_dec_nombres || 'DECLARANTE'}</strong>, de <strong>${cd.f_dec_edad || '45'}</strong> años de edad, nacionalidad <strong>${cd.f_dec_nacionalidad || 'ARGENTINA'}</strong>, estado civil <strong>${cd.f_dec_estado_civil || 'SOLTERO'}</strong>, profesión u ocupación <strong>${cd.f_dec_profesion || 'EMPLEADO POLICIAL'}</strong>, instruido, domicilio en calle <strong>${cd.f_dec_domicilio || 'CALLE 1 N° 23'}</strong>, entre calle <strong>${cd.f_dec_entre_calles || 'CALLE 2 Y CALLE 3'}</strong> del mismo medio, Documento Nacional de Identidad Nº <strong>${cd.f_dec_dni || '45000123'}</strong>, que si exhibe, que si repite de memoria y que si retiene para sí en este acto. Acto seguido se le es preguntado para que exprese si se encuentra comprendido en lo tipificado en el Código Procesal Penal de la Provincia de Buenos Aires en artículo 234. 'prohibición de declarar', artículo 235. 'facultad de Abstención', por encontrarse comprendido en algún grado de parentesco y artículo 236. 'deber de Abstención' por su estado oficio o profesión del secreto profesional, manifiesta NO estar comprendido en las referidas prohibiciones, ni abstenciones. Que, preguntado para que diga si posee vínculo de parentesco o de interés con las mismas, como así también de cualquier otra circunstancia que sirva para apreciar su veracidad de sus dichos, manifiesta que NO. En consecuencia y acorde a lo normado en el artículo 101 del Código Procesal Penal de la provincia de Buenos Aires, seguidamente es invitado a manifestar respecto al hecho en cuestión por lo que seguidamente DECLARA: Que, resulta ser empleado de la Policía de la Provincia de Buenos Aires, ostentando en la actualidad la jerarquía de <strong>${cd.f_dec_jerarquia || 'OFICIAL'}</strong>, del escalafón <strong>${cd.f_dec_subescalafon || 'GENERAL'}</strong>, legajo personal N° <strong>${cd.f_dec_legajo || '123456'}</strong>, cumpliendo en la actualidad sus servicios en el <strong>${cd.f_dec_destino || 'DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)'}</strong>, como <strong>${cd.f_dec_funcion || 'DISPONIBLE'}</strong>. En la fecha, se hace presente a los fines de prestar declaración testimonial en <strong>${cd.f_caratula || '21100 - 082162/2026 - DN154527'}</strong>, donde se analiza la conducta del <strong>${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</strong>, en trámite ante <strong>${cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</strong>, incoadas el <strong>${fechaHechoHtml}</strong>. En esa inteligencia relata ${cd.f_dec_declara || ''}. Es todo cuanto declara al respecto. Por lo que no siendo para más el acto, previa e integra lectura que da por sí y no teniendo nada que quitar, tachar, corregir y/o enmendar, ratifica de todo su contenido, firmando al pie para constancia ante el suscripto que certifica todo lo actuado.`;
+
                 container.innerHTML = `
-                <div class="a4-page">
-                    ${logoHtml}
-                    <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 0.8cm; text-transform: uppercase;">
-                        DECLARACIÓN TESTIMONIAL
-                    </div>
-                    <div class="doc-body">
-                        <p class="sangria-estandar">
-                            En la localidad de <strong>${cd.f_proc_localidad || 'González Catán'}</strong>, partido de <strong>${cd.f_proc_partido || 'La Matanza'}</strong>, provincia de Buenos Aires, República Argentina, en el asiento físico de la <strong>${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}</strong>, sita en calle <strong>${cd.f_proc_dir_dependencia || 'San Matías (Ruta provincial 1001) sin número'}</strong>, entre calle <strong>${cd.f_proc_entre_calles || 'Achupallas y B. Llorente'}</strong> del mismo medio, a los <strong>${cd.f1_dia || '10'}</strong> días del mes de <strong>${(cd.f1_mes || 'abril').toLowerCase()}</strong> del año <strong>${cd.f1_anio || '2026'}</strong>, siendo las 16:58 horas, comparece ante el actuante y testigo de actuación, una persona previamente citada a los efectos de recibirle declaración Testimonial, a quien seguidamente se lo ENTERA Y NOTIFICA del contenido del Decreto Reglamentario 1050/09 de la Ley 13982; contenidos en el artículo 190 inc. “d”: “Son Faltas graves de competencia originaria de la Auditoría General de Asuntos Internos: las que dan lugar a sanción de exoneración, cesantía o suspensión del empleo sin goce de haberes de hasta sesenta (60) días, aplicables por resolución fundada en el marco de una investigación sumarial administrativa.”, y artículo 205 inciso “k” del mismo texto legal que reza: “Son faltas graves, que constituyen abuso funcional con intervención originaria de la Auditoría General de Asuntos Internos”, inciso “k”, que reza: “Afirmar una falsedad, negar o callar la verdad en todo o en parte, se relacione o no con actos del servicio, en las declaraciones, informes, diagnósticos, traducciones o interpretaciones que se presten como testigo, perito, intérprete del instructor o en cualquier otro carácter, cuando ello pudiera importar un perjuicio para terceros o para la administración de justicia, o en un proceso administrativo o actuación administrativa'. Asimismo, se lo pone en conocimiento del contenido del artículo 100 y 218 del Código Procesal Penal de la provincia de Buenos aires, que comprende y por ello bajo juramento o promesa de decir la verdad, manifiesta que se producirá en todo cuanto supiere, conociere y le fuera preguntado, de acuerdo con sus creencias o convicciones cívicas, con total veracidad, mediante la fórmula: “LO JURO”.
-                        </p>
-                        <p class="sangria-estandar">
-                            Seguidamente se lo pone en conocimiento del contenido del artículo 275 y 276 del Código Penal de La Nación, donde se castiga el “Falso Testimonio”. Seguidamente conforme lo establecido en el artículo 240 del Código Procesal Penal de la Provincia de Buenos Aires, se le es preguntado por sus nombres, apellidos y demás circunstancias personales, manifestando ser y llamarse: <strong>${cd.f_dec_nombres || 'DECLARANTE'}</strong>, de <strong>${cd.f_dec_edad || '45'}</strong> años de edad, nacionalidad <strong>${cd.f_dec_nacionalidad || 'ARGENTINA'}</strong>, estado civil <strong>${cd.f_dec_estado_civil || 'SOLTERO'}</strong>, profesión u ocupación <strong>${cd.f_dec_profesion || 'EMPLEADO POLICIAL'}</strong>, instruido, domicilio en calle <strong>${cd.f_dec_domicilio || 'CALLE 1 N° 23'}</strong>, entre calle <strong>${cd.f_dec_entre_calles || 'CALLE 2 Y CALLE 3'}</strong> del mismo medio, Documento Nacional de Identidad Nº <strong>${cd.f_dec_dni || '45000123'}</strong>, que si exhibe, que si repite de memoria y que si retiene para sí en este acto.
-                        </p>
-                        <p class="sangria-estandar">
-                            Acto seguido se le es preguntado para que exprese si se encuentra comprendido en lo tipificado en el Código Procesal Penal de la Provincia de Buenos Aires en artículo 234. 'prohibición de declarar', artículo 235. 'facultad de Abstención', por encontrarse comprendido en algún grado de parentesco y artículo 236. 'deber de Abstención' por su estado oficio o profesión del secreto profesional, manifiesta NO estar comprendido en las referidas prohibiciones, ni abstenciones. Que, preguntado para que diga si posee vínculo de parentesco o de interés con las mismas, como así también de cualquier otra circunstancia que sirva para apreciar su veracidad de sus dichos, manifiesta que NO.
-                        </p>
-                        <p class="sangria-estandar">
-                            En consecuencia y acorde a lo normado en el artículo 101 del Código Procesal Penal de la provincia de Buenos Aires, seguidamente es invitado a manifestar respecto al hecho en cuestión por lo que seguidamente DECLARA: Que, resulta ser empleado de la Policía de la Provincia de Buenos Aires, ostentando en la actualidad la jerarquía de <strong>${cd.f_dec_jerarquia || 'OFICIAL'}</strong>, del escalafón <strong>${cd.f_dec_subescalafon || 'GENERAL'}</strong>, legajo personal N° <strong>${cd.f_dec_legajo || '123456'}</strong>, cumpliendo en la actualidad sus servicios en el <strong>${cd.f_dec_destino || 'DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)'}</strong>, como <strong>${cd.f_dec_funcion || 'DISPONIBLE'}</strong>. En la fecha, se hace presente a los fines de prestar declaración testimonial en <strong>${cd.f_caratula || '21100 - 082162/2026 - DN154527'}</strong>, donde se analiza la conducta del <strong>${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</strong>, en trámite ante <strong>${cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</strong>, incoadas el <strong>${fechaHechoHtml}</strong>. En esa inteligencia relata: ${cd.f_dec_declara || ''}. Es todo cuanto declara al respecto.
-                        </p>
-                        <p class="sangria-estandar">
-                            Por lo que no siendo para más el acto, previa e integra lectura que da por sí y no teniendo nada que quitar, tachar, corregir y/o enmendar, ratifica de todo su contenido, firmando al pie para constancia ante el suscripto que certifica todo lo actuado.
-                        </p>
+                <div class="multi-page-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+                    <div class="a4-page auto-flow-page">
+                        ${logoHtml}
+                        <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 0.8cm; text-transform: uppercase;">
+                            DECLARACIÓN TESTIMONIAL
+                        </div>
+                        <div class="doc-body">
+                            <p class="sangria-cero" style="text-align: justify; margin: 0; line-height: 1.5;">
+                                ${textoCorridoDeclara}
+                            </p>
+                        </div>
                     </div>
                 </div>`;
                 return;
@@ -765,7 +777,7 @@
                 return;
             }
 
-            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = window.docx;
+            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, Header, Footer } = window.docx;
             const cd = appState.carga_datos;
             const tabKey = appState.currentTab;
 
@@ -833,6 +845,34 @@
                         }),
                         new Paragraph({ spacing: { after: 400 } }),
                         new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: gridRows })
+                    ]
+                });
+            } else if (tabKey === 'decl_testimonial') {
+                const fechaHechoHtml = getFechaHechoFormatted(true);
+                const textoCorridoDeclara = `En la localidad de <b>${cd.f_proc_localidad || 'González Catán'}</b>, partido de <b>${cd.f_proc_partido || 'La Matanza'}</b>, provincia de Buenos Aires, República Argentina, en el asiento físico de la <b>${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}</b>, sita en calle <b>${cd.f_proc_dir_dependencia || 'San Matías (Ruta provincial 1001) sin número'}</b>, entre calle <b>${cd.f_proc_entre_calles || 'Achupallas y B. Llorente'}</b> del mismo medio, a los <b>${cd.f1_dia || '10'}</b> días del mes de <b>${(cd.f1_mes || 'abril').toLowerCase()}</b> del año <b>${cd.f1_anio || '2026'}</b>, siendo las 16:58 horas, comparece ante el actuante y testigo de actuación, una persona previamente citada a los efectos de recibirle declaración Testimonial, a quien seguidamente se lo ENTERA Y NOTIFICA del contenido del Decreto Reglamentario 1050/09 de la Ley 13982; contenidos en el artículo 190 inc. “d”: “Son Faltas graves de competencia originaria de la Auditoría General de Asuntos Internos: las que dan lugar a sanción de exoneración, cesantía o suspensión del empleo sin goce de haberes de hasta sesenta (60) días, aplicables por resolución fundada en el marco de una investigación sumarial administrativa.”, y artículo 205 inciso “k” del mismo texto legal que reza: “Son faltas graves, que constituyen abuso funcional con intervención originaria de la Auditoría General de Asuntos Internos”, inciso “k”, que reza: “Afirmar una falsedad, negar o callar la verdad en todo o en parte, se relacione o no con actos del servicio, en las declaraciones, informes, diagnósticos, traducciones o interpretaciones que se presten como testigo, perito, intérprete del instructor o en cualquier otro carácter, cuando ello pudiera importar un perjuicio para terceros o para la administración de justicia, o en un proceso administrativo o actuación administrativa'. Asimismo, se lo pone en conocimiento del contenido del artículo 100 y 218 del Código Procesal Penal de la provincia de Buenos aires, que comprende y por ello bajo juramento o promesa de decir la verdad, manifiesta que se producirá en todo cuanto supiere, conociere y le fuera preguntado, de acuerdo con sus creencias o convicciones cívicas, with total veracidad, mediante la fórmula: “LO JURO”. Seguidamente se lo pone en conocimiento del contenido del artículo 275 y 276 del Código Penal de La Nación, donde se castiga el “Falso Testimonio”. Seguidamente conforme lo establecido en el artículo 240 del Código Procesal Penal de la Provincia de Buenos Aires, se le es preguntado por sus nombres, apellidos y demás circunstancias personales, manifestando ser y llamarse: <b>${cd.f_dec_nombres || 'DECLARANTE'}</b>, de <b>${cd.f_dec_edad || '45'}</b> años de edad, nacionalidad <b>${cd.f_dec_nacionalidad || 'ARGENTINA'}</b>, estado civil <b>${cd.f_dec_estado_civil || 'SOLTERO'}</b>, profesión u ocupación <b>${cd.f_dec_profesion || 'EMPLEADO POLICIAL'}</b>, instruido, domicilio en calle <b>${cd.f_dec_domicilio || 'CALLE 1 N° 23'}</b>, entre calle <b>${cd.f_dec_entre_calles || 'CALLE 2 Y CALLE 3'}</b> del mismo medio, Documento Nacional de Identidad Nº <b>${cd.f_dec_dni || '45000123'}</b>, que si exhibe, que si repite de memoria y que si retiene para sí en este acto. Acto seguido se le es preguntado para que exprese si se encuentra comprendido en lo tipificado en el Código Procesal Penal de la Provincia de Buenos Aires en artículo 234. 'prohibición de declarar', artículo 235. 'facultad de Abstención', por encontrarse comprendido en algún grado de parentesco y artículo 236. 'deber de Abstención' por su estado oficio o profesión del secreto profesional, manifiesta NO estar comprendido en las referidas prohibiciones, ni abstenciones. Que, preguntado para que diga si posee vínculo de parentesco o de interés con las mismas, como así también de cualquier otra circunstancia que sirva para apreciar su veracidad de sus dichos, manifiesta que NO. En consecuencia y acorde a lo normado en el artículo 101 del Código Procesal Penal de la provincia de Buenos Aires, seguidamente es invitado a manifestar respecto al hecho en cuestión por lo que seguidamente DECLARA: Que, resulta ser empleado de la Policía de la Provincia de Buenos Aires, ostentando en la actualidad la jerarquía de <b>${cd.f_dec_jerarquia || 'OFICIAL'}</b>, del escalafón <b>${cd.f_dec_subescalafon || 'GENERAL'}</b>, legajo personal N° <b>${cd.f_dec_legajo || '123456'}</b>, cumpliendo en la actualidad sus servicios en el <b>${cd.f_dec_destino || 'DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)'}</b>, como <b>${cd.f_dec_funcion || 'DISPONIBLE'}</b>. En la fecha, se hace presente a los fines de prestar declaración testimonial en <b>${cd.f_caratula || '21100 - 082162/2026 - DN154527'}</b>, donde se analiza la conducta del <b>${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</b>, en trámite ante <b>${cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</b>, incoadas el <b>${fechaHechoHtml}</b>. En esa inteligencia relata ${cd.f_dec_declara || ''}. Es todo cuanto declara al respecto. Por lo que no siendo para más el acto, previa e integra lectura que da por sí y no teniendo nada que quitar, tachar, corregir y/o enmendar, ratifica de todo su contenido, firmando al pie para constancia ante el suscripto que certifica todo lo actuado.`;
+
+                sections.push({
+                    properties: {
+                        page: {
+                            size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) },
+                            margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips },
+                            differentFirstPageHeaderFooter: true
+                        }
+                    },
+                    headers: {
+                        first: new Header({
+                            children: [new Paragraph({ children: [new TextRun({ text: "MINISTERIO DE SEGURIDAD - GOBIERNO DE LA PROVINCIA DE BUENOS AIRES", bold: true, size: 18, color: "0284c7", font: "Arial" })] })]
+                        }),
+                        default: new Header({
+                            children: [new Paragraph({ children: [new TextRun({ text: "MINISTERIO DE SEGURIDAD - GOBIERNO DE LA PROVINCIA DE BUENOS AIRES", bold: true, size: 18, color: "0284c7", font: "Arial" })] })]
+                        }),
+                        even: new Header({
+                            children: [new Paragraph({ children: [] })]
+                        })
+                    },
+                    children: [
+                        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 200, after: 400 }, children: [new TextRun({ text: "DECLARACIÓN TESTIMONIAL", bold: true, size: 28, font: "Arial" })] }),
+                        new Paragraph({ alignment: AlignmentType.JUSTIFY, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(textoCorridoDeclara) })
                     ]
                 });
             } else {
