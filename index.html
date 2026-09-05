@@ -4,7 +4,7 @@
 <meta charset="UTF-8"> 
 <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
 <title>Generador Automático de Notas Sumariales PAR</title> 
-<!-- Librerías de exportación estables y compatibles --> 
+<!-- Librerías de exportación estables --> 
 <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script> 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script> 
 <style> 
@@ -250,7 +250,7 @@ input:focus, select:focus, textarea:focus {
   font-size: 0.82rem; 
 } 
 
-/* VISTA PREVIA A4 GENERAL Y UNIFICADA */ 
+/* VISTA PREVIA A4 */ 
 .doc-preview-wrapper { 
   background: #64748b; 
   padding: 20px; 
@@ -312,7 +312,6 @@ input:focus, select:focus, textarea:focus {
 .caratula-value { font-weight: bold; } 
 .page-break { page-break-before: always; break-before: page; margin-top: 30px; } 
 
-/* OCULTAR ENCABEZADOS EN PÁGINAS PARES */ 
 .multi-page-container .a4-page:nth-of-type(even) .doc-header-logo { display: none !important; } 
 .multi-page-container .a4-page:nth-of-type(odd) .doc-header-logo { display: block !important; } 
 
@@ -762,7 +761,7 @@ function renderNotePreview(tabKey) {
 
   if (tabKey === 'caratula_doc') { 
     container.innerHTML = ` 
-      <div class="a4-page caratula-page-fixed"> 
+      <div class="a4-page caratula-page-fixed" id="a4-preview"> 
         ${logoHtml} 
         <div class="caratula-container-auto"> 
           <div> 
@@ -811,7 +810,7 @@ function renderNotePreview(tabKey) {
   if (tabKey === 'dto_recepcion') { 
     container.innerHTML = ` 
       <div class="multi-page-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px;">
-        <div class="a4-page"> 
+        <div class="a4-page" id="a4-preview"> 
           ${logoHtml} 
           <div style="text-align: right; font-weight: bold; font-size: 11pt; margin-bottom: 0.3cm;"> 
             Corresponde a expediente ${cd.f_caratula || '21100 - 082162/2026 - DN154527'} 
@@ -853,7 +852,7 @@ function renderNotePreview(tabKey) {
     
     container.innerHTML = ` 
       <div class="multi-page-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px;"> 
-        <div class="a4-page auto-flow-page"> 
+        <div class="a4-page auto-flow-page" id="a4-preview"> 
           ${logoHtml} 
           <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 0.8cm; text-transform: uppercase;"> 
             DECLARACIÓN TESTIMONIAL 
@@ -965,7 +964,7 @@ function renderNotePreview(tabKey) {
       </div>`; 
   } 
 
-  container.innerHTML = `<div class="a4-page">${htmlContent}</div>`; 
+  container.innerHTML = `<div class="a4-page" id="a4-preview">${htmlContent}</div>`; 
 } 
 
 function getDocxLibrary() { 
