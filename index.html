@@ -1,947 +1,1166 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador Automático de Notas Sumariales PAR</title>
-    <!-- Librerías de exportación compatibles con GitHub Pages -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.3.0/docx.browser.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <style>
-        :root {
-            --primary: #0284c7;
-            --primary-dark: #0369a1;
-            --bg-body: #f8fafc;
-            --sidebar-bg: #0f172a;
-            --sidebar-hover: #1e293b;
-            --card-bg: #ffffff;
-            --border: #cbd5e1;
-            --text-dark: #334155;
-        }
-        * { box-sizing: border-box; font-family: Arial, sans-serif !important; }
-        body { margin: 0; padding: 0; background-color: var(--bg-body); color: var(--text-dark); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        
-        /* BARRA SUPERIOR DE NAVEGACIÓN */
-        .top-navbar { background-color: var(--sidebar-bg); display: flex; flex-direction: column; border-bottom: 2px solid var(--primary); flex-shrink: 0; padding: 6px 12px; }
-        .top-navbar-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 4px; }
-        .top-navbar-title { color: #fff; font-weight: bold; font-size: 0.95rem; padding: 4px 10px; background: var(--primary); border-radius: 4px; white-space: nowrap; }
-        .nav-list-top { list-style: none; padding: 0; margin: 4px 0 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
-        .nav-item-top { padding: 6px 12px; cursor: pointer; font-size: 0.82rem; color: #94a3b8; background-color: #1e293b; border-radius: 4px; transition: all 0.2s ease; display: flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #334155; }
-        .nav-item-top:hover { background-color: var(--sidebar-hover); color: #ffffff; }
-        .nav-item-top.active { background-color: var(--primary); color: #ffffff; font-weight: 600; border-color: var(--primary-dark); }
-        
-        /* CONTENEDOR PRINCIPAL */
-        .app-container { display: flex; flex: 1; overflow: hidden; }
-        
-        /* PANEL IZQUIERDO: FORMULARIO */
-        .left-sidebar-form { width: 500px; background: var(--card-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar-form-header { padding: 12px 16px; font-size: 0.92rem; font-weight: 800; background-color: var(--primary-dark); color: #fff; }
-        .sidebar-form-content { padding: 14px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; }
-        
-        .row-group-block { background-color: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin-bottom: 6px; }
-        .row-group-title { font-size: 0.75rem; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; margin-bottom: 8px; border-bottom: 2px solid var(--primary); padding-bottom: 4px; }
-        .form-group { display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; }
-        label { font-size: 0.70rem; font-weight: 700; color: #475569; text-transform: uppercase; }
-        .row-badge { background: #0f172a; color: #fff; padding: 1px 5px; border-radius: 3px; font-size: 0.65rem; margin-right: 5px; }
-        input, select, textarea { padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; font-size: 0.80rem; outline: none; background: #fff; width: 100%; }
-        textarea { resize: vertical; min-height: 80px; line-height: 1.4; }
-        input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
-        
-        /* PANEL DERECHO: VISTA PREVIA */
-        .main-panel { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: var(--bg-body); }
-        .card { background: var(--card-bg); border-radius: 8px; padding: 16px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .card-title { font-size: 0.95rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 12px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-        .actions-bar { display: flex; gap: 10px; justify-content: flex-end; }
-        .btn { border: none; padding: 8px 14px; border-radius: 5px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; white-space: nowrap; }
-        .btn-primary { background-color: var(--primary); color: white; }
-        .btn-primary:hover { background-color: var(--primary-dark); }
-        .btn-print { background-color: #475569; color: white; }
-        .btn-print:hover { background-color: #334155; }
-        .btn-add { background-color: #10b981; color: white; flex-shrink: 0; }
-        .btn-danger { background-color: #ef4444; color: white; padding: 3px 6px; font-size: 0.75rem; border-radius: 4px; border: none; cursor: pointer; }
-        
-        .dropdown-container { display: flex; gap: 8px; margin-bottom: 10px; width: 100%; align-items: center; }
-        .dropdown-container select { flex: 1; }
-        .selected-list { list-style: none; padding: 0; margin-top: 10px; }
-        .selected-list li { background: #f8fafc; border: 1px solid var(--border); border-radius: 5px; padding: 8px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; }
-        
-        /* VISTA PREVIA A4 */
-        .doc-preview-wrapper { background: #64748b; padding: 20px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 15px; overflow-x: auto; }
-        .a4-page { background: white; width: 210mm; min-height: 297mm; padding-top: 2.5cm; padding-bottom: 2.5cm; padding-left: 4cm; padding-right: 1.5cm; box-shadow: 0 10px 25px rgba(0,0,0,0.3); font-size: 11pt; line-height: 1.45; color: #000; box-sizing: border-box; position: relative; }
-        .a4-page.caratula-page-fixed { height: 297mm !important; overflow: hidden; }
-        .a4-page.auto-flow-page { min-height: auto !important; height: auto !important; overflow: visible !important; }
-        
-        .doc-header-logo { text-align: left; margin-bottom: 0.3cm; }
-        .doc-header-logo img { max-height: 60px; width: auto; object-fit: contain; }
-        .doc-mid-section { margin-left: 40%; width: 60%; margin-bottom: 1.2em; }
-        .doc-addressee { font-weight: bold; margin-bottom: 1.2em; text-transform: uppercase; }
-        .sangria-dto { text-indent: 3.5cm !important; margin-bottom: 1em; text-align: justify; }
-        .sangria-estandar { text-indent: 1.25cm !important; margin-bottom: 1em; text-align: justify; }
-        .sangria-cero { text-indent: 0cm !important; margin-bottom: 1em; text-align: justify; }
-        .doc-body ol { padding-left: 1.25cm; margin-bottom: 1em; }
-        .doc-body li { margin-bottom: 0.5em; text-align: justify; }
-        
-        /* ESTILOS DE CARÁTULA */
-        .caratula-container-auto { display: flex; flex-direction: column; justify-content: space-between; height: calc(100% - 75px); width: 100%; }
-        .caratula-title-main { text-align: center; font-size: 16pt; font-weight: 900; text-transform: uppercase; margin-top: 10px; }
-        .caratula-isa-box { border: 2px solid #000; padding: 12px; text-align: center; font-size: 15pt; font-weight: bold; margin: 15px 0; }
-        .caratula-grid-auto { display: flex; flex-direction: column; justify-content: space-between; flex: 1; font-size: 10.5pt; text-transform: uppercase; padding-bottom: 10px; }
-        .caratula-row-item { display: grid; grid-template-columns: 210px 1fr; column-gap: 15px; align-items: center; }
-        .caratula-label { font-weight: bold; text-decoration: underline; }
-        .caratula-value { font-weight: bold; }
-        .page-break { page-break-before: always; margin-top: 30px; }
-        
-        /* REGLAS DE ENCABEZADO ALTERNADO PARA PÁGINAS IMPARES Y PARES */
-        .multi-page-container .a4-page:nth-of-type(even) .doc-header-logo {
-            display: none !important;
-        }
-        .multi-page-container .a4-page:nth-of-type(odd) .doc-header-logo {
-            display: block !important;
-        }
+<!DOCTYPE html> 
+<html lang="es"> 
+<head> 
+<meta charset="UTF-8"> 
+<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+<title>Generador Automático de Notas Sumariales PAR</title> 
+<!-- Librerías de exportación compatibles con GitHub Pages --> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.3.0/docx.browser.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script> 
+<style> 
+:root { 
+  --primary: #0284c7; 
+  --primary-dark: #0369a1; 
+  --bg-body: #f8fafc; 
+  --sidebar-bg: #0f172a; 
+  --sidebar-hover: #1e293b; 
+  --card-bg: #ffffff; 
+  --border: #cbd5e1; 
+  --text-dark: #334155; 
+} 
+* { 
+  box-sizing: border-box; 
+  font-family: Arial, sans-serif !important; 
+} 
+body { 
+  margin: 0; 
+  padding: 0; 
+  background-color: var(--bg-body); 
+  color: var(--text-dark); 
+  display: flex; 
+  flex-direction: column; 
+  height: 100vh; 
+  overflow: hidden; 
+} 
 
-        @media print {
-            body { background: white !important; overflow: visible !important; height: auto !important; }
-            .top-navbar, .left-sidebar-form, .card-title, .actions-bar, #card-desplegable-picker, #note-preview-title { display: none !important; }
-            .app-container { display: block !important; }
-            .main-panel { padding: 0 !important; overflow: visible !important; background: transparent !important; }
-            .card { border: none !important; box-shadow: none !important; padding: 0 !important; background: transparent !important; }
-            .doc-preview-wrapper { background: white !important; padding: 0 !important; gap: 0 !important; overflow: visible !important; }
-            .a4-page { width: 100% !important; box-shadow: none !important; padding-top: 2.5cm !important; padding-bottom: 2.5cm !important; padding-left: 4cm !important; padding-right: 1.5cm !important; margin: 0 !important; display: block !important; page-break-after: always; }
-            .a4-page.caratula-page-fixed { height: 297mm !important; }
-            .a4-page.auto-flow-page { min-height: auto !important; height: auto !important; page-break-after: auto !important; }
-            
-            /* REGLAS IMPRESIÓN PÁGINAS PARES / IMPARES */
-            .multi-page-container .a4-page:nth-of-type(even) .doc-header-logo {
-                display: none !important;
-            }
-            .multi-page-container .a4-page:nth-of-type(odd) .doc-header-logo {
-                display: block !important;
-            }
+/* BARRA SUPERIOR DE NAVEGACIÓN */ 
+.top-navbar { 
+  background-color: var(--sidebar-bg); 
+  display: flex; 
+  flex-direction: column; 
+  border-bottom: 2px solid var(--primary); 
+  flex-shrink: 0; 
+  padding: 6px 12px; 
+} 
+.top-navbar-header { 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  padding-bottom: 4px; 
+} 
+.top-navbar-title { 
+  color: #fff; 
+  font-weight: bold; 
+  font-size: 0.95rem; 
+  padding: 4px 10px; 
+  background: var(--primary); 
+  border-radius: 4px; 
+  white-space: nowrap; 
+} 
+.nav-list-top { 
+  list-style: none; 
+  padding: 0; 
+  margin: 4px 0 0 0; 
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 6px; 
+} 
+.nav-item-top { 
+  padding: 6px 12px; 
+  cursor: pointer; 
+  font-size: 0.82rem; 
+  color: #94a3b8; 
+  background-color: #1e293b; 
+  border-radius: 4px; 
+  transition: all 0.2s ease; 
+  display: flex; 
+  align-items: center; 
+  gap: 6px; 
+  white-space: nowrap; 
+  border: 1px solid #334155; 
+} 
+.nav-item-top:hover { 
+  background-color: var(--sidebar-hover); 
+  color: #ffffff; 
+} 
+.nav-item-top.active { 
+  background-color: var(--primary); 
+  color: #ffffff; 
+  font-weight: 600; 
+  border-color: var(--primary-dark); 
+} 
 
-            @page { size: A4; margin: 0; }
-        }
-    </style>
-</head>
-<body>
-    <!-- BARRA SUPERIOR DE NAVEGACIÓN -->
-    <div class="top-navbar">
-        <div class="top-navbar-header">
-            <div class="top-navbar-title">GENERADOR DE NOTAS SUMARIALES PAR</div>
-        </div>
-        <ul class="nav-list-top">
-            <li class="nav-item-top active" onclick="switchTab('caratula_doc', this)">📄 2. Carátula</li>
-            <li class="nav-item-top" onclick="switchTab('dto_recepcion', this)">📄 3. Dto. Recepción</li>
-            <li class="nav-item-top" onclick="switchTab('col_div', this)">📄 4. Col. DIV</li>
-            <li class="nav-item-top" onclick="switchTab('col_existencia_ipp', this)">📄 5. Col. Existencia IPP</li>
-            <li class="nav-item-top" onclick="switchTab('star_existencia_cautelares', this)">📄 6. Existencia Cautelares</li>
-            <li class="nav-item-top" onclick="switchTab('col_cria_myf', this)">📄 7. Col. Cría MYF</li>
-            <li class="nav-item-top" onclick="switchTab('star_inf_anmac_repar', this)">📄 8. Inf. ANMAC / REPAR</li>
-            <li class="nav-item-top" onclick="switchTab('star_lep', this)">📄 9. Legajo Elec. (LEP)</li>
-            <li class="nav-item-top" onclick="switchTab('decl_testimonial', this)">📄 10. Dec. Testimonial</li>
-        </ul>
-    </div>
+/* CONTENEDOR PRINCIPAL */ 
+.app-container { 
+  display: flex; 
+  flex: 1; 
+  overflow: hidden; 
+} 
 
-    <!-- CONTENEDOR PRINCIPAL -->
-    <div class="app-container">
-        <!-- PANEL IZQUIERDO: FORMULARIO COMPLETO REORDENADO -->
-        <div class="left-sidebar-form">
-            <div class="sidebar-form-header">📝 1. CARGA DE DATOS COMPLETA</div>
-            <div class="sidebar-form-content" id="tab-carga_datos">
-                
-                <!-- SECCIÓN 1: FECHA DE LA NOTA -->
-                <div class="row-group-block">
-                    <div class="row-group-title"><span class="row-badge">Sección 1</span>FECHA DE LA NOTA</div>
-                    <div class="form-group"><label>DÍA</label><input type="number" id="f1_dia" value="10"></div>
-                    <div class="form-group"><label>MES</label><input type="text" id="f1_mes" value="abril"></div>
-                    <div class="form-group"><label>AÑO</label><input type="number" id="f1_anio" value="2026"></div>
-                </div>
+/* PANEL IZQUIERDO: FORMULARIO */ 
+.left-sidebar-form { 
+  width: 500px; 
+  background: var(--card-bg); 
+  border-right: 1px solid var(--border); 
+  display: flex; 
+  flex-direction: column; 
+  flex-shrink: 0; 
+} 
+.sidebar-form-header { 
+  padding: 12px 16px; 
+  font-size: 0.92rem; 
+  font-weight: 800; 
+  background-color: var(--primary-dark); 
+  color: #fff; 
+} 
+.sidebar-form-content { 
+  padding: 14px; 
+  overflow-y: auto; 
+  flex: 1; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 10px; 
+} 
+.row-group-block { 
+  background-color: #f1f5f9; 
+  border: 1px solid #cbd5e1; 
+  border-radius: 6px; 
+  padding: 10px; 
+  margin-bottom: 6px; 
+} 
+.row-group-title { 
+  font-size: 0.75rem; 
+  font-weight: 800; 
+  color: var(--primary-dark); 
+  text-transform: uppercase; 
+  margin-bottom: 8px; 
+  border-bottom: 2px solid var(--primary); 
+  padding-bottom: 4px; 
+} 
+.form-group { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 3px; 
+  margin-bottom: 6px; 
+} 
+label { 
+  font-size: 0.70rem; 
+  font-weight: 700; 
+  color: #475569; 
+  text-transform: uppercase; 
+} 
+.row-badge { 
+  background: #0f172a; 
+  color: #fff; 
+  padding: 1px 5px; 
+  border-radius: 3px; 
+  font-size: 0.65rem; 
+  margin-right: 5px; 
+} 
+input, select, textarea { 
+  padding: 6px 8px; 
+  border: 1px solid var(--border); 
+  border-radius: 5px; 
+  font-size: 0.80rem; 
+  outline: none; 
+  background: #fff; 
+  width: 100%; 
+} 
+textarea { 
+  resize: vertical; 
+  min-height: 80px; 
+  line-height: 1.4; 
+} 
+input:focus, select:focus, textarea:focus { 
+  border-color: var(--primary); 
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); 
+} 
 
-                <!-- SECCIÓN 2: DATOS DEL IMPUTADO -->
-                <div class="row-group-block">
-                    <div class="row-group-title"><span class="row-badge">Sección 2</span>DATOS DEL IMPUTADO</div>
-                    <div class="form-group"><label>JERARQUIA, AGRUPACION, LEGAJO Y NOMBRE</label><input type="text" id="f_imp_nombre" value="OFL 123123 IMPUTADO DEL HECHO"></div>
-                    <div class="form-group"><label>EDAD</label><input type="number" id="f_imp_edad" value="45"></div>
-                    <div class="form-group"><label>DNI</label><input type="text" id="f_imp_dni" value="45000123"></div>
-                    <div class="form-group"><label>DOMICILIO</label><input type="text" id="f_imp_domicilio" value="CALLE 1 N° 24"></div>
-                    <div class="form-group"><label>ENTRE CALLES</label><input type="text" id="f_imp_entre_calles" value="CALLE 2 Y CALLE 3"></div>
-                    <div class="form-group"><label>LOCALIDAD</label><input type="text" id="f_imp_localidad" value="Los Hornos"></div>
-                    <div class="form-group"><label>PARTIDO</label><input type="text" id="f_imp_partido" value="LA PLATA"></div>
-                    <div class="form-group"><label>CONTACTO</label><input type="text" id="f_imp_contacto" value="11-2257-9393"></div>
-                    <div class="form-group"><label>DESTINO</label><select id="f_imp_destino" class="dep-select-options"></select></div>
-                </div>
+/* PANEL DERECHO: VISTA PREVIA */ 
+.main-panel { 
+  flex: 1; 
+  padding: 16px; 
+  overflow-y: auto; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 16px; 
+  background: var(--bg-body); 
+} 
+.card { 
+  background: var(--card-bg); 
+  border-radius: 8px; 
+  padding: 16px; 
+  border: 1px solid var(--border); 
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+} 
+.card-title { 
+  font-size: 0.95rem; 
+  font-weight: 700; 
+  color: var(--primary-dark); 
+  margin-bottom: 12px; 
+  border-bottom: 2px solid #f1f5f9; 
+  padding-bottom: 6px; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+} 
+.actions-bar { 
+  display: flex; 
+  gap: 10px; 
+  justify-content: flex-end; 
+} 
+.btn { 
+  border: none; 
+  padding: 8px 14px; 
+  border-radius: 5px; 
+  font-size: 0.85rem; 
+  font-weight: 600; 
+  cursor: pointer; 
+  display: inline-flex; 
+  align-items: center; 
+  gap: 6px; 
+  transition: background 0.2s; 
+  white-space: nowrap; 
+} 
+.btn-primary { background-color: var(--primary); color: white; } 
+.btn-primary:hover { background-color: var(--primary-dark); } 
+.btn-print { background-color: #475569; color: white; } 
+.btn-print:hover { background-color: #334155; } 
+.btn-add { background-color: #10b981; color: white; flex-shrink: 0; } 
+.btn-danger { background-color: #ef4444; color: white; padding: 3px 6px; font-size: 0.75rem; border-radius: 4px; border: none; cursor: pointer; } 
 
-                <!-- SECCIÓN 3: DATOS DEL DECLARANTE (TESTIMONIAL) -->
-                <div class="row-group-block">
-                    <div class="row-group-title"><span class="row-badge">Sección 3</span>DATOS DEL DECLARANTE (TESTIMONIAL)</div>
-                    <div class="form-group"><label>NOMBRES COMPLETOS</label><input type="text" id="f_dec_nombres" value="DECLARANTE"></div>
-                    <div class="form-group"><label>EDAD</label><input type="number" id="f_dec_edad" value="45"></div>
-                    <div class="form-group"><label>NACIONALIDAD</label><input type="text" id="f_dec_nacionalidad" value="ARGENTINA"></div>
-                    <div class="form-group"><label>ESTADO CIVIL</label><input type="text" id="f_dec_estado_civil" value="SOLTERO"></div>
-                    <div class="form-group"><label>PROFESION U OCUPACION</label><input type="text" id="f_dec_profesion" value="EMPLEADO POLICIAL"></div>
-                    <div class="form-group"><label>DOMICILIO</label><input type="text" id="f_dec_domicilio" value="CALLE 1 N° 23"></div>
-                    <div class="form-group"><label>ENTRE CALLES</label><input type="text" id="f_dec_entre_calles" value="CALLE 2 Y CALLE 3"></div>
-                    <div class="form-group"><label>LOCALIDAD</label><input type="text" id="f_dec_localidad" value="Los Hornos"></div>
-                    <div class="form-group"><label>PARTIDO</label><input type="text" id="f_dec_partido" value="LA PLATA"></div>
-                    <div class="form-group"><label>DNI</label><input type="text" id="f_dec_dni" value="45000123"></div>
-                    <div class="form-group"><label>CONTACTO</label><input type="text" id="f_dec_contacto" value="11-2257-9393"></div>
-                    <div class="form-group"><label>MAIL</label><input type="text" id="f_dec_mail" value=""></div>
-                    <div class="form-group"><label>JERARQUIA</label><input type="text" id="f_dec_jerarquia" value="OFICIAL"></div>
-                    <div class="form-group"><label>SUBESCALAFON</label><input type="text" id="f_dec_subescalafon" value="GENERAL"></div>
-                    <div class="form-group"><label>LEGAJO PERSONAL</label><input type="text" id="f_dec_legajo" value="123456"></div>
-                    <div class="form-group"><label>DESTINO</label><select id="f_dec_destino" class="dep-select-options"></select></div>
-                    <div class="form-group"><label>FUNCION</label><input type="text" id="f_dec_funcion" value="DISPONIBLE"></div>
-                    <div class="form-group">
-                        <label>DECLARA:</label>
-                        <textarea id="f_dec_declara">a fin de tramitar las diligencias solicitadas con el fin de establecer la existencia de Actuaciones Penales, y en caso de ser afirmativo se informe número de causa, fiscalía interviniente, temperamento adoptado contra el personal policial actuante. Que, en fecha 31 de agosto del corriente, el dicente procedió a mandar nota escrita al correo electrónico a mesafg.ql@mpba.gov.ar, perteneciente a Mesa de Entradas y salidas del Departamento Judicial de Quilmes, a fin de que informe si se registró denuncia con los datos filiatorios del agente que dio génesis a la pieza administrativa. Que, en fecha 02 del corriente mes y año, le respondieron mediante oficio judicial que surge Proceso Penal PP-13-02-009986-26/00 en trámite ante la FV – UFIyJ N° 10 que “al efectuar una compulsa de las actuaciones en el sistema informático del ministerio público (simp), se advierte que el Sr. Agente Fiscal interviniente ha dispuesto EL ARCHIVO DE LAS ACTUACIONES a tenor del art. 268, 4° párrafo del C.P.P., con fecha 18/05/2026.” sic, observando que se encuentra firmado por VAZQUEZ Gaston Mariano secretario de Ministerio Publico de Primera Instancia, entregado copia de oficio judicial junto con nota enviada para mejor ilustración y proveer de lo narrado.</textarea>
-                    </div>
-                </div>
+.dropdown-container { 
+  display: flex; 
+  gap: 8px; 
+  margin-bottom: 10px; 
+  width: 100%; 
+  align-items: center; 
+} 
+.dropdown-container select { flex: 1; } 
+.selected-list { list-style: none; padding: 0; margin-top: 10px; } 
+.selected-list li { 
+  background: #f8fafc; 
+  border: 1px solid var(--border); 
+  border-radius: 5px; 
+  padding: 8px; 
+  margin-bottom: 6px; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  font-size: 0.82rem; 
+} 
 
-                <!-- SECCIÓN 4: PROCEDENCIA Y PERSONAL ACTUANTE -->
-                <div class="row-group-block">
-                    <div class="row-group-title"><span class="row-badge">Sección 4</span>PROCEDENCIA Y PERSONAL ACTUANTE</div>
-                    <div class="form-group"><label>PROCEDENCIA</label><select id="f_proc_procedencia" class="dep-select-options"></select></div>
-                    <div class="form-group"><label>DIR. DEPENDENCIA</label><input type="text" id="f_proc_dir_dependencia" value="San Matías (Ruta provincial 1001) sin número"></div>
-                    <div class="form-group"><label>ENTRE CALLES</label><input type="text" id="f_proc_entre_calles" value="Achupallas y B. Llorente"></div>
-                    <div class="form-group"><label>LOCALIDAD</label><input type="text" id="f_proc_localidad" value="González Catán"></div>
-                    <div class="form-group"><label>PARTIDO</label><input type="text" id="f_proc_partido" value="La Matanza"></div>
-                    <div class="form-group"><label>INSTRUCTOR</label><input type="text" id="f_proc_instructor" value="COMISARIO MAYOR (CDO.) HERNAN ABEL BIANDIN"></div>
-                    <div class="form-group"><label>FUNCION</label><input type="text" id="f_proc_funcion" value="SUBDIRECTOR"></div>
-                    <div class="form-group"><label>SECRETARIO</label><input type="text" id="f_proc_secretario" value="OFICIAL SUBAYUDANTE (CDO.) FLORENCIA MILENA ZALAZAR"></div>
-                </div>
+/* VISTA PREVIA A4 */ 
+.doc-preview-wrapper { 
+  background: #64748b; 
+  padding: 20px; 
+  border-radius: 8px; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  gap: 15px; 
+  overflow-x: auto; 
+} 
+.a4-page { 
+  background: white; 
+  width: 210mm; 
+  min-height: 297mm; 
+  padding-top: 2.5cm; 
+  padding-bottom: 2.5cm; 
+  padding-left: 2.75cm; 
+  padding-right: 2.75cm; /* Margenes simétricos por defecto */
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+  font-size: 11pt; 
+  line-height: 1.45; 
+  color: #000; 
+  box-sizing: border-box; 
+  position: relative; 
+} 
+.a4-page.caratula-page-fixed { 
+  height: 297mm !important; 
+  overflow: hidden; 
+  padding-left: 4cm;
+  padding-right: 1.5cm;
+} 
+.a4-page.auto-flow-page { 
+  min-height: auto !important; 
+  height: auto !important; 
+  overflow: visible !important; 
+} 
 
-                <!-- SECCIÓN 5: DEPENDENCIA DESTINATARIA -->
-                <div class="row-group-block">
-                    <div class="row-group-title"><span class="row-badge">Sección 5</span>DEPENDENCIA DESTINATARIA</div>
-                    <div class="form-group"><label>DIRIGIDA A:</label><select id="f_dest_dirigida_a" class="dep-select-options"></select></div>
-                </div>
+/* MARGEN SUPERIOR PARA PÁGINAS PARES EN VISTA PREVIA DECLARACIÓN TESTIMONIAL */
+.multi-page-container.decl-testimonial-mode .a4-page:nth-of-type(even) {
+  padding-top: 5cm !important;
+  padding-left: 2.75cm !important;
+  padding-right: 2.75cm !important;
+}
 
-                <!-- SECCIÓN 6: DATOS DEL DENUNCIANTE -->
-                <div class="row-group-block">
-                    <div class="row-group-title"><span class="row-badge">Sección 6</span>DATOS DEL DENUNCIANTE</div>
-                    <div class="form-group"><label>JERARQUIA, AGRUPACION, LEGAJO Y NOMBRE</label><input type="text" id="f_den_nombre" value="OFL 123123 DENUNCIANTE DEL HECHO"></div>
-                    <div class="form-group"><label>EDAD</label><input type="number" id="f_den_edad" value="45"></div>
-                    <div class="form-group"><label>DNI</label><input type="text" id="f_den_dni" value="45000123"></div>
-                    <div class="form-group"><label>DOMICILIO</label><input type="text" id="f_den_domicilio" value="CALLE 1 N° 24"></div>
-                    <div class="form-group"><label>ENTRE CALLES</label><input type="text" id="f_den_entre_calles" value="CALLE 2 Y CALLE 3"></div>
-                    <div class="form-group"><label>LOCALIDAD</label><input type="text" id="f_den_localidad" value="Los Hornos"></div>
-                    <div class="form-group"><label>PARTIDO</label><input type="text" id="f_den_partido" value="LA PLATA"></div>
-                    <div class="form-group"><label>CONTACTO</label><input type="text" id="f_den_contacto" value="11-2257-9393"></div>
-                    <div class="form-group"><label>DESTINO</label><select id="f_den_destino" class="dep-select-options"></select></div>
-                </div>
+.multi-page-container.decl-testimonial-mode .a4-page:nth-of-type(odd) {
+  padding-top: 2.5cm !important;
+  padding-left: 2.75cm !important;
+  padding-right: 2.75cm !important;
+}
 
-                <!-- SECCIÓN 7: DATOS DEL CAUSANTE -->
-                <div class="row-group-block">
-                    <div class="row-group-title"><span class="row-badge">Sección 7</span>DATOS DEL CAUSANTE</div>
-                    <div class="form-group"><label>JERARQUIA, AGRUPACION, LEGAJO Y NOMBRE</label><input type="text" id="f_cau_nombre" value="OFL 123123 CAUSANTE DEL HECHO"></div>
-                    <div class="form-group"><label>EDAD</label><input type="number" id="f_cau_edad" value="45"></div>
-                    <div class="form-group"><label>DNI</label><input type="text" id="f_cau_dni" value="45000123"></div>
-                    <div class="form-group"><label>DOMICILIO</label><input type="text" id="f_cau_domicilio" value="CALLE 1 N° 24"></div>
-                    <div class="form-group"><label>ENTRE CALLES</label><input type="text" id="f_cau_entre_calles" value="CALLE 2 Y CALLE 3"></div>
-                    <div class="form-group"><label>LOCALIDAD</label><input type="text" id="f_cau_localidad" value="Los Hornos"></div>
-                    <div class="form-group"><label>PARTIDO</label><input type="text" id="f_cau_partido" value="LA PLATA"></div>
-                    <div class="form-group"><label>CONTACTO</label><input type="text" id="f_cau_contacto" value="11-2257-9393"></div>
-                    <div class="form-group"><label>DESTINO</label><select id="f_cau_destino" class="dep-select-options"></select></div>
-                </div>
+.doc-header-logo { text-align: left; margin-bottom: 0.3cm; } 
+.doc-header-logo img { max-height: 60px; width: auto; object-fit: contain; } 
+.doc-mid-section { margin-left: 40%; width: 60%; margin-bottom: 1.2em; } 
+.doc-addressee { font-weight: bold; margin-bottom: 1.2em; text-transform: uppercase; } 
+.sangria-dto { text-indent: 3.5cm !important; margin-bottom: 1em; text-align: justify; } 
+.sangria-estandar { text-indent: 1.25cm !important; margin-bottom: 1em; text-align: justify; } 
+.sangria-cero { text-indent: 0cm !important; margin-bottom: 1em; text-align: justify; } 
+.doc-body ol { padding-left: 1.25cm; margin-bottom: 1em; } 
+.doc-body li { margin-bottom: 0.5em; text-align: justify; } 
 
-                <!-- SECCIÓN 8: EXPEDIENTE Y LUGAR DEL HECHO -->
-                <div class="row-group-block">
-                    <div class="row-group-title"><span class="row-badge">Sección 8</span>EXPEDIENTE Y LUGAR DEL HECHO</div>
-                    <div class="form-group"><label>DÍA DEL HECHO</label><input type="number" id="f_hecho_dia" value="2"></div>
-                    <div class="form-group"><label>MES DEL HECHO</label><input type="text" id="f_hecho_mes" value="abril"></div>
-                    <div class="form-group"><label>AÑO DEL HECHO</label><input type="number" id="f_hecho_anio" value="2026"></div>
-                    <div class="form-group"><label>EXP. ELECTRONICO N°</label><input type="text" id="f_exp_elec" value="EX-2026-16420475- -GDEBA-DDPRYGEMSGP"></div>
-                    <div class="form-group"><label>CARATULA</label><input type="text" id="f_caratula" value="21100 - 082162/2026 - DN154527"></div>
-                    <div class="form-group"><label>INTERVENCION:</label><select id="f_intervencion" class="control-disciplinario-options"></select></div>
-                    <div class="form-group"><label>LUGAR DEL HECHO:</label><input type="text" id="f_lugar_hecho" value="CALLE 1 Y CALLE 2"></div>
-                    <div class="form-group"><label>LOCALIDAD DEL HECHO</label><input type="text" id="f_localidad_hecho" value="Los Hornos"></div>
-                    <div class="form-group"><label>PARTIDO DEL HECHO</label><input type="text" id="f_partido_hecho" value="LA PLATA"></div>
-                    <div class="form-group"><label>SINTESIS DEL HECHO:</label><textarea id="f_sintesis_hecho" placeholder="Ingrese síntesis del hecho..."></textarea></div>
-                </div>
+/* ESTILOS DE CARÁTULA */ 
+.caratula-container-auto { 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between; 
+  height: calc(100% - 75px); 
+  width: 100%; 
+} 
+.caratula-title-main { text-align: center; font-size: 16pt; font-weight: 900; text-transform: uppercase; margin-top: 10px; } 
+.caratula-isa-box { border: 2px solid #000; padding: 12px; text-align: center; font-size: 15pt; font-weight: bold; margin: 15px 0; } 
+.caratula-grid-auto { display: flex; flex-direction: column; justify-content: space-between; flex: 1; font-size: 10.5pt; text-transform: uppercase; padding-bottom: 10px; } 
+.caratula-row-item { display: grid; grid-template-columns: 210px 1fr; column-gap: 15px; align-items: center; } 
+.caratula-label { font-weight: bold; text-decoration: underline; } 
+.caratula-value { font-weight: bold; } 
+.page-break { page-break-before: always; margin-top: 30px; } 
 
-                <!-- SECCIÓN 9: MAGISTRADO Y CAUSA PENAL -->
-                <div class="row-group-block">
-                    <div class="row-group-title"><span class="row-badge">Sección 9</span>MAGISTRADO Y CAUSA PENAL</div>
-                    <div class="form-group"><label>MAGISTRADO JUDICIAL</label><input type="text" id="f_magistrado" value="FISCALIA GENERAL DEPARTAMENTAL"></div>
-                    <div class="form-group"><label>DPTO JUDICIAL</label><input type="text" id="f_dpto_judicial" value="MORON"></div>
-                    <div class="form-group"><label>PROCESO PENAL N°</label><input type="text" id="f_proceso_penal" value="PP-00-00-000000-26/00"></div>
-                    <div class="form-group"><label>CARATULA PENAL</label><input type="text" id="f_caratula_penal" value="Lesiones culposas"></div>
-                </div>
+/* REGLAS DE ENCABEZADO ALTERNADO PARA PÁGINAS IMPARES Y PARES */ 
+.multi-page-container .a4-page:nth-of-type(even) .doc-header-logo { display: none !important; } 
+.multi-page-container .a4-page:nth-of-type(odd) .doc-header-logo { display: block !important; } 
 
-                <!-- SECCIÓN 10: DATOS DE LA VÍCTIMA -->
-                <div class="row-group-block">
-                    <div class="row-group-title"><span class="row-badge">Sección 10</span>DATOS DE LA VÍCTIMA</div>
-                    <div class="form-group"><label>JERARQUIA, AGRUPACION, LEGAJO Y NOMBRE</label><input type="text" id="f_vic_nombre" value="OFL 123123 VICTIMA DEL HECHO"></div>
-                    <div class="form-group"><label>EDAD</label><input type="number" id="f_vic_edad" value="45"></div>
-                    <div class="form-group"><label>DNI</label><input type="text" id="f_vic_dni" value="45000123"></div>
-                    <div class="form-group"><label>DOMICILIO</label><input type="text" id="f_vic_domicilio" value="CALLE 1 N° 24"></div>
-                    <div class="form-group"><label>ENTRE CALLES</label><input type="text" id="f_vic_entre_calles" value="CALLE 2 Y CALLE 3"></div>
-                    <div class="form-group"><label>LOCALIDAD</label><input type="text" id="f_vic_localidad" value="Los Hornos"></div>
-                    <div class="form-group"><label>PARTIDO</label><input type="text" id="f_vic_partido" value="LA PLATA"></div>
-                    <div class="form-group"><label>CONTACTO</label><input type="text" id="f_vic_contacto" value="11-2257-9393"></div>
-                    <div class="form-group"><label>DESTINO</label><select id="f_vic_destino" class="dep-select-options"></select></div>
-                </div>
+@media print { 
+  body { background: white !important; overflow: visible !important; height: auto !important; } 
+  .top-navbar, .left-sidebar-form, .card-title, .actions-bar, #card-desplegable-picker, #note-preview-title { display: none !important; } 
+  .app-container { display: block !important; } 
+  .main-panel { padding: 0 !important; overflow: visible !important; background: transparent !important; } 
+  .card { border: none !important; box-shadow: none !important; padding: 0 !important; background: transparent !important; } 
+  .doc-preview-wrapper { background: white !important; padding: 0 !important; gap: 0 !important; overflow: visible !important; } 
+  .a4-page { 
+    width: 100% !important; 
+    box-shadow: none !important; 
+    padding-top: 2.5cm !important; 
+    padding-bottom: 2.5cm !important; 
+    padding-left: 2.75cm !important; 
+    padding-right: 2.75cm !important; 
+    margin: 0 !important; 
+    display: block !important; 
+    page-break-after: always; 
+  } 
+  .a4-page.caratula-page-fixed { 
+    height: 297mm !important; 
+    padding-left: 4cm !important;
+    padding-right: 1.5cm !important;
+  } 
+  .a4-page.auto-flow-page { 
+    min-height: auto !important; 
+    height: auto !important; 
+    page-break-after: auto !important; 
+  } 
+  .multi-page-container .a4-page:nth-of-type(even) .doc-header-logo { display: none !important; } 
+  .multi-page-container .a4-page:nth-of-type(odd) .doc-header-logo { display: block !important; } 
 
-            </div>
-        </div>
+  @page { size: A4; margin: 0; } 
+  
+  /* REGLA DE IMPRESIÓN PARA PÁGINAS PARES EN DECLARACIÓN TESTIMONIAL */
+  @page decl_even_page {
+    margin-top: 5cm;
+    margin-bottom: 2.5cm;
+    margin-left: 2.75cm;
+    margin-right: 2.75cm;
+  }
+  
+  .multi-page-container.decl-testimonial-mode .a4-page:nth-of-type(even) {
+    page: decl_even_page;
+    padding-top: 5cm !important;
+    padding-left: 2.75cm !important;
+    padding-right: 2.75cm !important;
+  }
+} 
+</style> 
+</head> 
+<body> 
+<!-- BARRA SUPERIOR DE NAVEGACIÓN --> 
+<div class="top-navbar"> 
+  <div class="top-navbar-header"> 
+    <div class="top-navbar-title">GENERADOR DE NOTAS SUMARIALES PAR</div> 
+  </div> 
+  <ul class="nav-list-top"> 
+    <li class="nav-item-top active" onclick="switchTab('caratula_doc', this)">📄 2. Carátula</li> 
+    <li class="nav-item-top" onclick="switchTab('dto_recepcion', this)">📄 3. Dto. Recepción</li> 
+    <li class="nav-item-top" onclick="switchTab('col_div', this)">📄 4. Col. DIV</li> 
+    <li class="nav-item-top" onclick="switchTab('col_existencia_ipp', this)">📄 5. Col. Existencia IPP</li> 
+    <li class="nav-item-top" onclick="switchTab('star_existencia_cautelares', this)">📄 6. Existencia Cautelares</li> 
+    <li class="nav-item-top" onclick="switchTab('col_cria_myf', this)">📄 7. Col. Cría MYF</li> 
+    <li class="nav-item-top" onclick="switchTab('star_inf_anmac_repar', this)">📄 8. Inf. ANMAC / REPAR</li> 
+    <li class="nav-item-top" onclick="switchTab('star_lep', this)">📄 9. Legajo Elec. (LEP)</li> 
+    <li class="nav-item-top" onclick="switchTab('decl_testimonial', this)">📄 10. Dec. Testimonial</li> 
+  </ul> 
+</div> 
 
-        <!-- PANEL DERECHO: VISTA PREVIA -->
-        <div class="main-panel">
-            <div class="card" id="card-desplegable-picker" style="display: none;">
-                <div class="card-title">SELECCIÓN DE DILIGENCIAS (DESPLEGABLE EXCLUSIVO COL. DIV)</div>
-                <div class="dropdown-container">
-                    <select id="dropdown-options-select"></select>
-                    <button class="btn btn-add" onclick="addSelectedPoint()">➕ Agregar Punto</button>
-                </div>
-                <label>PUNTOS SELECCIONADOS PARA LA NOTA:</label>
-                <ol class="selected-list" id="selected-points-list"></ol>
-            </div>
+<!-- CONTENEDOR PRINCIPAL --> 
+<div class="app-container"> 
+  <!-- PANEL IZQUIERDO: FORMULARIO COMPLETO REORDENADO --> 
+  <div class="left-sidebar-form"> 
+    <div class="sidebar-form-header">📝 1. CARGA DE DATOS COMPLETA</div> 
+    <div class="sidebar-form-content" id="tab-carga_datos"> 
+      <!-- SECCIÓN 1: FECHA DE LA NOTA --> 
+      <div class="row-group-block"> 
+        <div class="row-group-title"><span class="row-badge">Sección 1</span>FECHA DE LA NOTA</div> 
+        <div class="form-group"><label>DÍA</label><input type="number" id="f1_dia" value="10"></div> 
+        <div class="form-group"><label>MES</label><input type="text" id="f1_mes" value="abril"></div> 
+        <div class="form-group"><label>AÑO</label><input type="number" id="f1_anio" value="2026"></div> 
+      </div> 
+      <!-- SECCIÓN 2: DATOS DEL IMPUTADO --> 
+      <div class="row-group-block"> 
+        <div class="row-group-title"><span class="row-badge">Sección 2</span>DATOS DEL IMPUTADO</div> 
+        <div class="form-group"><label>JERARQUIA, AGRUPACION, LEGAJO Y NOMBRE</label><input type="text" id="f_imp_nombre" value="OFL 123123 IMPUTADO DEL HECHO"></div> 
+        <div class="form-group"><label>EDAD</label><input type="number" id="f_imp_edad" value="45"></div> 
+        <div class="form-group"><label>DNI</label><input type="text" id="f_imp_dni" value="45000123"></div> 
+        <div class="form-group"><label>DOMICILIO</label><input type="text" id="f_imp_domicilio" value="CALLE 1 N° 24"></div> 
+        <div class="form-group"><label>ENTRE CALLES</label><input type="text" id="f_imp_entre_calles" value="CALLE 2 Y CALLE 3"></div> 
+        <div class="form-group"><label>LOCALIDAD</label><input type="text" id="f_imp_localidad" value="Los Hornos"></div> 
+        <div class="form-group"><label>PARTIDO</label><input type="text" id="f_imp_partido" value="LA PLATA"></div> 
+        <div class="form-group"><label>CONTACTO</label><input type="text" id="f_imp_contacto" value="11-2257-9393"></div> 
+        <div class="form-group"><label>DESTINO</label><select id="f_imp_destino" class="dep-select-options"></select></div> 
+      </div> 
+      <!-- SECCIÓN 3: DATOS DEL DECLARANTE (TESTIMONIAL) --> 
+      <div class="row-group-block"> 
+        <div class="row-group-title"><span class="row-badge">Sección 3</span>DATOS DEL DECLARANTE (TESTIMONIAL)</div> 
+        <div class="form-group"><label>NOMBRES COMPLETOS</label><input type="text" id="f_dec_nombres" value="DECLARANTE"></div> 
+        <div class="form-group"><label>EDAD</label><input type="number" id="f_dec_edad" value="45"></div> 
+        <div class="form-group"><label>NACIONALIDAD</label><input type="text" id="f_dec_nacionalidad" value="ARGENTINA"></div> 
+        <div class="form-group"><label>ESTADO CIVIL</label><input type="text" id="f_dec_estado_civil" value="SOLTERO"></div> 
+        <div class="form-group"><label>PROFESION U OCUPACION</label><input type="text" id="f_dec_profesion" value="EMPLEADO POLICIAL"></div> 
+        <div class="form-group"><label>DOMICILIO</label><input type="text" id="f_dec_domicilio" value="CALLE 1 N° 23"></div> 
+        <div class="form-group"><label>ENTRE CALLES</label><input type="text" id="f_dec_entre_calles" value="CALLE 2 Y CALLE 3"></div> 
+        <div class="form-group"><label>LOCALIDAD</label><input type="text" id="f_dec_localidad" value="Los Hornos"></div> 
+        <div class="form-group"><label>PARTIDO</label><input type="text" id="f_dec_partido" value="LA PLATA"></div> 
+        <div class="form-group"><label>DNI</label><input type="text" id="f_dec_dni" value="45000123"></div> 
+        <div class="form-group"><label>CONTACTO</label><input type="text" id="f_dec_contacto" value="11-2257-9393"></div> 
+        <div class="form-group"><label>MAIL</label><input type="text" id="f_dec_mail" value=""></div> 
+        <div class="form-group"><label>JERARQUIA</label><input type="text" id="f_dec_jerarquia" value="OFICIAL"></div> 
+        <div class="form-group"><label>SUBESCALAFON</label><input type="text" id="f_dec_subescalafon" value="GENERAL"></div> 
+        <div class="form-group"><label>LEGAJO PERSONAL</label><input type="text" id="f_dec_legajo" value="123456"></div> 
+        <div class="form-group"><label>DESTINO</label><select id="f_dec_destino" class="dep-select-options"></select></div> 
+        <div class="form-group"><label>FUNCION</label><input type="text" id="f_dec_funcion" value="DISPONIBLE"></div> 
+        <div class="form-group"> 
+          <label>DECLARA:</label> 
+          <textarea id="f_dec_declara">a fin de tramitar las diligencias solicitadas con el fin de establecer la existencia de Actuaciones Penales, y en caso de ser afirmativo se informe número de causa, fiscalía interviniente, temperamento adoptado contra el personal policial actuante. Que, en fecha 31 de agosto del corriente, el dicente procedió a mandar nota escrita al correo electrónico a mesafg.ql@mpba.gov.ar, perteneciente a Mesa de Entradas y salidas del Departamento Judicial de Quilmes, a fin de que informe si se registró denuncia con los datos filiatorios del agente que dio génesis a la pieza administrativa. Que, en fecha 02 del corriente mes y año, le respondieron mediante oficio judicial que surge Proceso Penal PP-13-02-009986-26/00 en trámite ante la FV – UFIyJ N° 10 que “al efectuar una compulsa de las actuaciones en el sistema informático del ministerio público (simp), se advierte que el Sr. Agente Fiscal interviniente ha dispuesto EL ARCHIVO DE LAS ACTUACIONES a tenor del art. 268, 4° párrafo del C.P.P., con fecha 18/05/2026.” sic, observando que se encuentra firmado por VAZQUEZ Gaston Mariano secretario de Ministerio Publico de Primera Instancia, entregado copia de oficio judicial junto con nota enviada para mejor ilustración y proveer de lo narrado.</textarea> 
+        </div> 
+      </div> 
+      <!-- SECCIÓN 4: PROCEDENCIA Y PERSONAL ACTUANTE --> 
+      <div class="row-group-block"> 
+        <div class="row-group-title"><span class="row-badge">Sección 4</span>PROCEDENCIA Y PERSONAL ACTUANTE</div> 
+        <div class="form-group"><label>PROCEDENCIA</label><select id="f_proc_procedencia" class="dep-select-options"></select></div> 
+        <div class="form-group"><label>DIR. DEPENDENCIA</label><input type="text" id="f_proc_dir_dependencia" value="San Matías (Ruta provincial 1001) sin número"></div> 
+        <div class="form-group"><label>ENTRE CALLES</label><input type="text" id="f_proc_entre_calles" value="Achupallas y B. Llorente"></div> 
+        <div class="form-group"><label>LOCALIDAD</label><input type="text" id="f_proc_localidad" value="González Catán"></div> 
+        <div class="form-group"><label>PARTIDO</label><input type="text" id="f_proc_partido" value="La Matanza"></div> 
+        <div class="form-group"><label>INSTRUCTOR</label><input type="text" id="f_proc_instructor" value="COMISARIO MAYOR (CDO.) HERNAN ABEL BIANDIN"></div> 
+        <div class="form-group"><label>FUNCION</label><input type="text" id="f_proc_funcion" value="SUBDIRECTOR"></div> 
+        <div class="form-group"><label>SECRETARIO</label><input type="text" id="f_proc_secretario" value="OFICIAL SUBAYUDANTE (CDO.) FLORENCIA MILENA ZALAZAR"></div> 
+      </div> 
+      <!-- SECCIÓN 5: DEPENDENCIA DESTINATARIA --> 
+      <div class="row-group-block"> 
+        <div class="row-group-title"><span class="row-badge">Sección 5</span>DEPENDENCIA DESTINATARIA</div> 
+        <div class="form-group"><label>DIRIGIDA A:</label><select id="f_dest_dirigida_a" class="dep-select-options"></select></div> 
+      </div> 
+      <!-- SECCIÓN 6: DATOS DEL DENUNCIANTE --> 
+      <div class="row-group-block"> 
+        <div class="row-group-title"><span class="row-badge">Sección 6</span>DATOS DEL DENUNCIANTE</div> 
+        <div class="form-group"><label>JERARQUIA, AGRUPACION, LEGAJO Y NOMBRE</label><input type="text" id="f_den_nombre" value="OFL 123123 DENUNCIANTE DEL HECHO"></div> 
+        <div class="form-group"><label>EDAD</label><input type="number" id="f_den_edad" value="45"></div> 
+        <div class="form-group"><label>DNI</label><input type="text" id="f_den_dni" value="45000123"></div> 
+        <div class="form-group"><label>DOMICILIO</label><input type="text" id="f_den_domicilio" value="CALLE 1 N° 24"></div> 
+        <div class="form-group"><label>ENTRE CALLES</label><input type="text" id="f_den_entre_calles" value="CALLE 2 Y CALLE 3"></div> 
+        <div class="form-group"><label>LOCALIDAD</label><input type="text" id="f_den_localidad" value="Los Hornos"></div> 
+        <div class="form-group"><label>PARTIDO</label><input type="text" id="f_den_partido" value="LA PLATA"></div> 
+        <div class="form-group"><label>CONTACTO</label><input type="text" id="f_den_contacto" value="11-2257-9393"></div> 
+        <div class="form-group"><label>DESTINO</label><select id="f_den_destino" class="dep-select-options"></select></div> 
+      </div> 
+      <!-- SECCIÓN 7: DATOS DEL CAUSANTE --> 
+      <div class="row-group-block"> 
+        <div class="row-group-title"><span class="row-badge">Sección 7</span>DATOS DEL CAUSANTE</div> 
+        <div class="form-group"><label>JERARQUIA, AGRUPACION, LEGAJO Y NOMBRE</label><input type="text" id="f_cau_nombre" value="OFL 123123 CAUSANTE DEL HECHO"></div> 
+        <div class="form-group"><label>EDAD</label><input type="number" id="f_cau_edad" value="45"></div> 
+        <div class="form-group"><label>DNI</label><input type="text" id="f_cau_dni" value="45000123"></div> 
+        <div class="form-group"><label>DOMICILIO</label><input type="text" id="f_cau_domicilio" value="CALLE 1 N° 24"></div> 
+        <div class="form-group"><label>ENTRE CALLES</label><input type="text" id="f_cau_entre_calles" value="CALLE 2 Y CALLE 3"></div> 
+        <div class="form-group"><label>LOCALIDAD</label><input type="text" id="f_cau_localidad" value="Los Hornos"></div> 
+        <div class="form-group"><label>PARTIDO</label><input type="text" id="f_cau_partido" value="LA PLATA"></div> 
+        <div class="form-group"><label>CONTACTO</label><input type="text" id="f_cau_contacto" value="11-2257-9393"></div> 
+        <div class="form-group"><label>DESTINO</label><select id="f_cau_destino" class="dep-select-options"></select></div> 
+      </div> 
+      <!-- SECCIÓN 8: EXPEDIENTE Y LUGAR DEL HECHO --> 
+      <div class="row-group-block"> 
+        <div class="row-group-title"><span class="row-badge">Sección 8</span>EXPEDIENTE Y LUGAR DEL HECHO</div> 
+        <div class="form-group"><label>DÍA DEL HECHO</label><input type="number" id="f_hecho_dia" value="2"></div> 
+        <div class="form-group"><label>MES DEL HECHO</label><input type="text" id="f_hecho_mes" value="abril"></div> 
+        <div class="form-group"><label>AÑO DEL HECHO</label><input type="number" id="f_hecho_anio" value="2026"></div> 
+        <div class="form-group"><label>EXP. ELECTRONICO N°</label><input type="text" id="f_exp_elec" value="EX-2026-16420475- -GDEBA-DDPRYGEMSGP"></div> 
+        <div class="form-group"><label>CARATULA</label><input type="text" id="f_caratula" value="21100 - 082162/2026 - DN154527"></div> 
+        <div class="form-group"><label>INTERVENCION:</label><select id="f_intervencion" class="control-disciplinario-options"></select></div> 
+        <div class="form-group"><label>LUGAR DEL HECHO:</label><input type="text" id="f_lugar_hecho" value="CALLE 1 Y CALLE 2"></div> 
+        <div class="form-group"><label>LOCALIDAD DEL HECHO</label><input type="text" id="f_localidad_hecho" value="Los Hornos"></div> 
+        <div class="form-group"><label>PARTIDO DEL HECHO</label><input type="text" id="f_partido_hecho" value="LA PLATA"></div> 
+        <div class="form-group"><label>SINTESIS DEL HECHO:</label><textarea id="f_sintesis_hecho" placeholder="Ingrese síntesis del hecho..."></textarea></div> 
+      </div> 
+      <!-- SECCIÓN 9: MAGISTRADO Y CAUSA PENAL --> 
+      <div class="row-group-block"> 
+        <div class="row-group-title"><span class="row-badge">Sección 9</span>MAGISTRADO Y CAUSA PENAL</div> 
+        <div class="form-group"><label>MAGISTRADO JUDICIAL</label><input type="text" id="f_magistrado" value="FISCALIA GENERAL DEPARTAMENTAL"></div> 
+        <div class="form-group"><label>DPTO JUDICIAL</label><input type="text" id="f_dpto_judicial" value="MORON"></div> 
+        <div class="form-group"><label>PROCESO PENAL N°</label><input type="text" id="f_proceso_penal" value="PP-00-00-000000-26/00"></div> 
+        <div class="form-group"><label>CARATULA PENAL</label><input type="text" id="f_caratula_penal" value="Lesiones culposas"></div> 
+      </div> 
+      <!-- SECCIÓN 10: DATOS DE LA VÍCTIMA --> 
+      <div class="row-group-block"> 
+        <div class="row-group-title"><span class="row-badge">Sección 10</span>DATOS DE LA VÍCTIMA</div> 
+        <div class="form-group"><label>JERARQUIA, AGRUPACION, LEGAJO Y NOMBRE</label><input type="text" id="f_vic_nombre" value="OFL 123123 VICTIMA DEL HECHO"></div> 
+        <div class="form-group"><label>EDAD</label><input type="number" id="f_vic_edad" value="45"></div> 
+        <div class="form-group"><label>DNI</label><input type="text" id="f_vic_dni" value="45000123"></div> 
+        <div class="form-group"><label>DOMICILIO</label><input type="text" id="f_vic_domicilio" value="CALLE 1 N° 24"></div> 
+        <div class="form-group"><label>ENTRE CALLES</label><input type="text" id="f_vic_entre_calles" value="CALLE 2 Y CALLE 3"></div> 
+        <div class="form-group"><label>LOCALIDAD</label><input type="text" id="f_vic_localidad" value="Los Hornos"></div> 
+        <div class="form-group"><label>PARTIDO</label><input type="text" id="f_vic_partido" value="LA PLATA"></div> 
+        <div class="form-group"><label>CONTACTO</label><input type="text" id="f_vic_contacto" value="11-2257-9393"></div> 
+        <div class="form-group"><label>DESTINO</label><select id="f_vic_destino" class="dep-select-options"></select></div> 
+      </div> 
+    </div> 
+  </div> 
 
-            <div class="card">
-                <div class="card-title">
-                    <span id="note-preview-title">DOCUMENTO GENERADO</span>
-                    <div class="actions-bar">
-                        <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir Documento</button>
-                        <button class="btn btn-primary" onclick="downloadWordDocument()">📥 Descargar en Word (.docx)</button>
-                    </div>
-                </div>
-                <div class="doc-preview-wrapper" id="doc-preview-wrapper-container">
-                    <div class="a4-page" id="a4-preview"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+  <!-- PANEL DERECHO: VISTA PREVIA --> 
+  <div class="main-panel"> 
+    <div class="card" id="card-desplegable-picker" style="display: none;"> 
+      <div class="card-title">SELECCIÓN DE DILIGENCIAS (DESPLEGABLE EXCLUSIVO COL. DIV)</div> 
+      <div class="dropdown-container"> 
+        <select id="dropdown-options-select"></select> 
+        <button class="btn btn-add" onclick="addSelectedPoint()">➕ Agregar Punto</button> 
+      </div> 
+      <label>PUNTOS SELECCIONADOS PARA LA NOTA:</label> 
+      <ol class="selected-list" id="selected-points-list"></ol> 
+    </div> 
+    <div class="card"> 
+      <div class="card-title"> 
+        <span id="note-preview-title">DOCUMENTO GENERADO</span> 
+        <div class="actions-bar"> 
+          <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir Documento</button> 
+          <button class="btn btn-primary" onclick="downloadWordDocument()">📥 Descargar en Word (.docx)</button> 
+        </div> 
+      </div> 
+      <div class="doc-preview-wrapper" id="doc-preview-wrapper-container"> 
+        <div class="a4-page" id="a4-preview"></div> 
+      </div> 
+    </div> 
+  </div> 
+</div> 
 
-    <script>
-        const LOGO_HEADER_BASE64 = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27400%27%20height%3D%2760%27%20viewBox%3D%270%200%20400%2060%27%3E%3Crect%20width%3D%27110%27%20height%3D%2735%27%20fill%3D%27%237FD1D6%27%2F%3E%3Ctext%20x%3D%277%27%20y%3D%2716%27%20font-family%3D%27Arial%27%20font-size%3D%279%27%20font-weight%3D%27bold%27%20fill%3D%27white%27%3EMINISTERIO%20DE%3C%2Ftext%3E%3Ctext%20x%3D%277%27%20y%3D%2727%27%20font-family%3D%27Arial%27%20font-size%3D%279%27%20font-weight%3D%27bold%27%20fill%3D%27white%27%3ESEGURIDAD%3C%2Ftext%3E%3Ctext%20x%3D%27200%27%20y%3D%2718%27%20font-family%3D%27Arial%27%20font-size%3D%2710%27%20font-weight%3D%27bold%27%20fill%3D%27%23666666%27%3EGOBIERNO%20DE%20LA%20PROVINCIA%20DE%3C%2Ftext%3E%3Ctext%20x%3D%27200%27%20y%3D%2736%27%20font-family%3D%27Arial%27%20font-size%3D%2718%27%20font-weight%3D%27900%27%20fill%3D%27%2351C2D5%27%3EBUENOS%20AIRES%3C%2Ftext%3E%3C%2Fsvg%3E";
+<script> 
+const LOGO_HEADER_BASE64 = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27400%27%20height%3D%2760%27%20viewBox%3D%270%200%20400%2060%27%3E%3Crect%20width%3D%27110%27%20height%3D%2735%27%20fill%3D%27%237FD1D6%27%2F%3E%3Ctext%20x%3D%277%27%20y%3D%2716%27%20font-family%3D%27Arial%27%20font-size%3D%279%27%20font-weight%3D%27bold%27%20fill%3D%27white%27%3EMINISTERIO%20DE%3C%2Ftext%3E%3Ctext%20x%3D%277%27%20y%3D%2727%27%20font-family%3D%27Arial%27%20font-size%3D%279%27%20font-weight%3D%27bold%27%20fill%3D%27white%27%3ESEGURIDAD%3C%2Ftext%3E%3Ctext%20x%3D%27200%27%20y%3D%2718%27%20font-family%3D%27Arial%27%20font-size%3D%2710%27%20font-weight%3D%27bold%27%20fill%3D%27%23666666%27%3EGOBIERNO%20DE%20LA%20PROVINCIA%20DE%3C%2Ftext%3E%3Ctext%20x%3D%27200%27%20y%3D%2736%27%20font-family%3D%27Arial%27%20font-size%3D%2718%27%20font-weight%3D%27900%27%20fill%3D%27%2351C2D5%27%3EBUENOS%20AIRES%3C%2Ftext%3E%3C%2Fsvg%3E"; 
 
-        const listaDependenciasColumnaA = [
-            "DIR. FUERZA BARRIAL DE APROX. (FBA)",
-            "DIV. FUERZA BARRIAL DE APROX. I (FBA LOMAS DE ZAMORA)",
-            "DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)",
-            "DIV. FUERZA BARRIAL DE APROX. III (FBA QUILMES)",
-            "DIV. FUERZA BARRIAL DE APROX. IV (FBA FLORENCIO VARELA)",
-            "DIV. FUERZA BARRIAL DE APROX. V (FBA LA PLATA)",
-            "DIV. FUERZA BARRIAL DE APROX. VI (FBA SAN MARTIN)",
-            "DIV. FUERZA BARRIAL DE APROX. VII (FBA TRES DE FEBRERO)",
-            "DIV. FUERZA BARRIAL DE APROX. VIII (FBA ITUZAINGO)",
-            "DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)",
-            "DIV. FUERZA BARRIAL DE APROX. X (FBA MORON)",
-            "DIV. FUERZA BARRIAL DE APROX. XI (FBA MERLO)",
-            "DIV. FUERZA BARRIAL DE APROX. XII (FBA MORENO)",
-            "DIV. FUERZA BARRIAL DE APROX. XIII (FBA MAR DEL PLATA)",
-            "DIV. FUERZA BARRIAL DE APROX. XIV (FBA AVELLANEDA)",
-            "DIV. FUERZA BARRIAL DE APROX. XV (FBA LANUS)",
-            "DIV. FUERZA BARRIAL DE APROX. XVI (FBA MALVINAS ARGENTINAS)",
-            "DIV. FUERZA BARRIAL DE APROX. XVII (FBA EZEIZA)",
-            "DIV. FUERZA BARRIAL DE APROX. XVIII (FBA LA MATANZA SUR)",
-            "DIV. FUERZA BARRIAL DE APROX. XIX (FBA LA MATANZA CENTRO)",
-            "DIV. FUERZA BARRIAL DE APROX. XX (FBA SAN ISIDRO)",
-            "DIV. FUERZA BARRIAL DE APROX. XXI (FBA ESTEBAN ECHEVERRIA)",
-            "DIV. FUERZA BARRIAL DE APROX. XXII (FBA BERISSO)",
-            "DIV. FUERZA BARRIAL DE APROX. XXIII (FBA SAN VICENTE)",
-            "DIV. FUERZA BARRIAL DE APROX. XXIV (FBA PILAR)",
-            "DIV. FUERZA BARRIAL DE APROX. XXV (FBA ENSENADA)",
-            "DIV. FUERZA BARRIAL DE APROX. XXVI (FBA LA MATANZA NORTE)",
-            "DIV. FUERZA BARRIAL DE APROX. XXVII (FBA GRAL RODRIGUEZ)",
-            "DIV. FUERZA BARRIAL DE APROX. XXVIII (FBA BRANDSEN)",
-            "DIV. FUERZA BARRIAL DE APROX. XXIX (FBA BERAZATEGUI)",
-            "DIV. FUERZA BARRIAL DE APROX. XXX (FBA CORONEL ROSALES)"
-        ];
+const listaDependenciasColumnaA = [ 
+  "DIR. FUERZA BARRIAL DE APROX. (FBA)", 
+  "DIV. FUERZA BARRIAL DE APROX. I (FBA LOMAS DE ZAMORA)", 
+  "DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)", 
+  "DIV. FUERZA BARRIAL DE APROX. III (FBA QUILMES)", 
+  "DIV. FUERZA BARRIAL DE APROX. IV (FBA FLORENCIO VARELA)", 
+  "DIV. FUERZA BARRIAL DE APROX. V (FBA LA PLATA)", 
+  "DIV. FUERZA BARRIAL DE APROX. VI (FBA SAN MARTIN)", 
+  "DIV. FUERZA BARRIAL DE APROX. VII (FBA TRES DE FEBRERO)", 
+  "DIV. FUERZA BARRIAL DE APROX. VIII (FBA ITUZAINGO)", 
+  "DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)", 
+  "DIV. FUERZA BARRIAL DE APROX. X (FBA MORON)", 
+  "DIV. FUERZA BARRIAL DE APROX. XI (FBA MERLO)", 
+  "DIV. FUERZA BARRIAL DE APROX. XII (FBA MORENO)", 
+  "DIV. FUERZA BARRIAL DE APROX. XIII (FBA MAR DEL PLATA)", 
+  "DIV. FUERZA BARRIAL DE APROX. XIV (FBA AVELLANEDA)", 
+  "DIV. FUERZA BARRIAL DE APROX. XV (FBA LANUS)", 
+  "DIV. FUERZA BARRIAL DE APROX. XVI (FBA MALVINAS ARGENTINAS)", 
+  "DIV. FUERZA BARRIAL DE APROX. XVII (FBA EZEIZA)", 
+  "DIV. FUERZA BARRIAL DE APROX. XVIII (FBA LA MATANZA SUR)", 
+  "DIV. FUERZA BARRIAL DE APROX. XIX (FBA LA MATANZA CENTRO)", 
+  "DIV. FUERZA BARRIAL DE APROX. XX (FBA SAN ISIDRO)", 
+  "DIV. FUERZA BARRIAL DE APROX. XXI (FBA ESTEBAN ECHEVERRIA)", 
+  "DIV. FUERZA BARRIAL DE APROX. XXII (FBA BERISSO)", 
+  "DIV. FUERZA BARRIAL DE APROX. XXIII (FBA SAN VICENTE)", 
+  "DIV. FUERZA BARRIAL DE APROX. XXIV (FBA PILAR)", 
+  "DIV. FUERZA BARRIAL DE APROX. XXV (FBA ENSENADA)", 
+  "DIV. FUERZA BARRIAL DE APROX. XXVI (FBA LA MATANZA NORTE)", 
+  "DIV. FUERZA BARRIAL DE APROX. XXVII (FBA GRAL RODRIGUEZ)", 
+  "DIV. FUERZA BARRIAL DE APROX. XXVIII (FBA BRANDSEN)", 
+  "DIV. FUERZA BARRIAL DE APROX. XXIX (FBA BERAZATEGUI)", 
+  "DIV. FUERZA BARRIAL DE APROX. XXX (FBA CORONEL ROSALES)" 
+]; 
 
-        const listaControlDisciplinarioColumnaE = [
-            "DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO",
-            "AUDITORÍA GENERAL DE ASUNTOS INTERNOS (A.G.A.I.)"
-        ];
+const listaControlDisciplinarioColumnaE = [ 
+  "DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO", 
+  "AUDITORÍA GENERAL DE ASUNTOS INTERNOS (A.G.A.I.)" 
+]; 
 
-        const listaOpcionesDesplegableRaw = [
-            "Informe de tipos, dias, horarios y modalidad de servicio del OFL 123123 IMPUTADO DEL HECHO",
-            "Concepto Funcional y Personal firmado por superior directo del causante OFL 123123 IMPUTADO DEL HECHO",
-            "Copia certificada y legible con habilitación del Libro de Novedades de la guardia de fecha 10/abril/2026",
-            "Copia certificada y legible con habilitación del Libro de Presentismo y Co.Re.S. de fecha 10/abril/2026",
-            "Legajo Electrónico Personal (L.E.P.) de OFL 123123 IMPUTADO DEL HECHO",
-            "Certifica de Revista legible generado por el Sistema Informático del Personal (SIPP) del OFL 123123 IMPUTADO DEL HECHO",
-            "Adune informe de Comportamiento y Seguimiento tanto en la faz laboral por parte del superior directo del OFL 123123 IMPUTADO DEL HECHO",
-            "Informe si el efectivo usufructuó licencia médica por el evento en estudio, debiéndose adunar copia certificada y legible del sistema informatico (SIPP) resaltando las que correspondan al hecho en pesquisa.",
-            "Copia certificada y legible de denuncia de accidente de trabajo o enfermedad profesional a la Asegurador Provincia A.R.T del lesionado.",
-            "Declaración testimonial al OFL 123123 IMPUTADO DEL HECHO bajo juramento de decir la verdad donde narre el recorrido habitual que realiza habitualmente desde el domicilio al lugar donde presta servicio acompañado con croquis ilustrativo señalando el domicilio declarado del agente, lugar del siniestro y lugar de trabajo",
-            "Adune copia certificada y legible de orden de servicio vigente al momento de los hechos en investigación.",
-            "Realice informe existencia de Procesos Penales vinculados a los presentes actuados. En caso de ser positivo informe número de causa, caratula, magistrado interviniente, estado en el que se encuentra y temperamento legal adoptado para con el personal policial interviniente.",
-            "Copia certificada y legible de CONSTANCIA DE ALTA/ FIN DE TRATAMIENTO de la Aseguradora de Riesgos del Trabajo (A.R.T.) del OFL 123123 VICTIMA DEL HECHO",
-            "Reconocimiento Médico Legal (RML) practicado sobre del OFL 123123 VICTIMA DEL HECHO",
-            "Copia certificada y legible de Licencia de conducir habilitante del conductor de la unidad policial.",
-            "Copia certificada y legible del Seguro Obligatorio para circular del momento del hecho del rodado.",
-            "Copia certificada y legible de Declaración Jurada (DDJJ) expedida por sistema informatico de Personal (SIPP) de vehículos firmada por el OFL 123123 IMPUTADO DEL HECHO",
-            "Efectuar el pertinente contacto con la denunciante con el objetivo de incorporar a estos todos aquellos elementos que a su criterio tiendan a esclarecer el suceso ahora ventilado.",
-            "Informe evaluación de riesgo y socio ambiental de las persona en situación de violencia.",
-            "Certificar denuncias anteriores con idéntica temática ante dicha Dependencia.",
-            "Solicitar Junta Medica Departamental (JMD).",
-            "Acta rubricada por el causante con el objeto de establecer si posee en forma particular material incluido en la Ley Nacional 20429.",
-            "Informe de ANMAC-REPAR.",
-            "Declaración Testimonial u Oficio Judicial, si siguen en vigencia las medidas restrictivas.",
-            "Informe de Visu realizado por personal idóneo.",
-            "Declaración testimonial del encargado de Logística.",
-            "Copia certificada y legible del cargo personal del elemento provisto.",
-            "Copia certificada y legible del cargo personal de chaleco de protección balística.",
-            "Copia certificada y legible de Libre de Deuda de la vestimenta y elementos provistos por la institución.",
-            "Copia certificada y legible de Licencia de conducir del OFL 123123 IMPUTADO DEL HECHO",
-            "Copia certificada y legible de denuncia a la aseguradora (DL6) de la unidad que nos ocupa.",
-            "Placas fotográficas del móvil del día de los hechos.",
-            "Copia certificada y legible de resolución del chofer de la unidad.",
-            "Declaración testimonial del Jefe de la Subsección Logística.",
-            "Adune presupuesto de taller que cotice el costo de las reparaciones.",
-            "Copia certificada y legible de Historia Clínica del OFL 123123 VICTIMA DEL HECHO"
-        ];
+const listaOpcionesDesplegableRaw = [ 
+  "Informe de tipos, dias, horarios y modalidad de servicio del OFL 123123 IMPUTADO DEL HECHO", 
+  "Concepto Funcional y Personal firmado por superior directo del causante OFL 123123 IMPUTADO DEL HECHO", 
+  "Copia certificada y legible con habilitación del Libro de Novedades de la guardia de fecha 10/abril/2026", 
+  "Copia certificada y legible con habilitación del Libro de Presentismo y Co.Re.S. de fecha 10/abril/2026", 
+  "Legajo Electrónico Personal (L.E.P.) de OFL 123123 IMPUTADO DEL HECHO", 
+  "Certifica de Revista legible generado por el Sistema Informático del Personal (SIPP) del OFL 123123 IMPUTADO DEL HECHO", 
+  "Adune informe de Comportamiento y Seguimiento tanto en la faz laboral por parte del superior directo del OFL 123123 IMPUTADO DEL HECHO", 
+  "Informe si el efectivo usufructuó licencia médica por el evento en estudio, debiéndose adunar copia certificada y legible del sistema informatico (SIPP) resaltando las que correspondan al hecho en pesquisa.", 
+  "Copia certificada y legible de denuncia de accidente de trabajo o enfermedad profesional a la Asegurador Provincia A.R.T del lesionado.", 
+  "Declaración testimonial al OFL 123123 IMPUTADO DEL HECHO bajo juramento de decir la verdad donde narre el recorrido habitual que realiza habitualmente desde el domicilio al lugar donde presta servicio acompañado con croquis ilustrativo señalando el domicilio declarado del agente, lugar del siniestro y lugar de trabajo", 
+  "Adune copia certificada y legible de orden de servicio vigente al momento de los hechos en investigación.", 
+  "Realice informe existencia de Procesos Penales vinculados a los presentes actuados. En caso de ser positivo informe número de causa, caratula, magistrado interviniente, estado en el que se encuentra y temperamento legal adoptado para con el personal policial interviniente.", 
+  "Copia certificada y legible de CONSTANCIA DE ALTA/ FIN DE TRATAMIENTO de la Aseguradora de Riesgos del Trabajo (A.R.T.) del OFL 123123 VICTIMA DEL HECHO", 
+  "Reconocimiento Médico Legal (RML) practicado sobre del OFL 123123 VICTIMA DEL HECHO", 
+  "Copia certificada y legible de Licencia de conducir habilitante del conductor de la unidad policial.", 
+  "Copia certificada y legible del Seguro Obligatorio para circular del momento del hecho del rodado.", 
+  "Copia certificada y legible de Declaración Jurada (DDJJ) expedida por sistema informatico de Personal (SIPP) de vehículos firmada por el OFL 123123 IMPUTADO DEL HECHO", 
+  "Efectuar el pertinente contacto con la denunciante con el objetivo de incorporar a estos todos aquellos elementos que a su criterio tiendan a esclarecer el suceso ahora ventilado.", 
+  "Informe evaluación de riesgo y socio ambiental de las persona en situación de violencia.", 
+  "Certificar denuncias anteriores con idéntica temática ante dicha Dependencia.", 
+  "Solicitar Junta Medica Departamental (JMD).", 
+  "Acta rubricada por el causante con el objeto de establecer si posee en forma particular material incluido en la Ley Nacional 20429.", 
+  "Informe de ANMAC-REPAR.", 
+  "Declaración Testimonial u Oficio Judicial, si siguen en vigencia las medidas restrictivas.", 
+  "Informe de Visu realizado por personal idóneo.", 
+  "Declaración testimonial del encargado de Logística.", 
+  "Copia certificada y legible del cargo personal del elemento provisto.", 
+  "Copia certificada y legible del cargo personal de chaleco de protección balística.", 
+  "Copia certificada y legible de Libre de Deuda de la vestimenta y elementos provistos por la institución.", 
+  "Copia certificada y legible de Licencia de conducir del OFL 123123 IMPUTADO DEL HECHO", 
+  "Copia certificada y legible de denuncia a la aseguradora (DL6) de la unidad que nos ocupa.", 
+  "Placas fotográficas del móvil del día de los hechos.", 
+  "Copia certificada y legible de resolución del chofer de la unidad.", 
+  "Declaración testimonial del Jefe de la Subsección Logística.", 
+  "Adune presupuesto de taller que cotice el costo de las reparaciones.", 
+  "Copia certificada y legible de Historia Clínica del OFL 123123 VICTIMA DEL HECHO" 
+]; 
 
-        let appState = {
-            carga_datos: {},
-            currentTab: "caratula_doc",
-            puntosSeleccionadosIndices: [0, 1, 4, 5]
-        };
+let appState = { 
+  carga_datos: {}, 
+  currentTab: "caratula_doc", 
+  puntosSeleccionadosIndices: [0, 1, 4, 5] 
+}; 
 
-        window.addEventListener('DOMContentLoaded', () => {
-            initFormSelects();
-            bindFormInputs();
-            updateStateFromInputs();
-        });
+window.addEventListener('DOMContentLoaded', () => { 
+  initFormSelects(); 
+  bindFormInputs(); 
+  updateStateFromInputs(); 
+}); 
 
-        function initFormSelects() {
-            const depSelects = document.querySelectorAll('.dep-select-options');
-            depSelects.forEach(select => {
-                select.innerHTML = '';
-                listaDependenciasColumnaA.forEach(dep => {
-                    const opt = document.createElement('option');
-                    opt.value = dep;
-                    opt.textContent = dep;
-                    select.appendChild(opt);
-                });
-            });
+function initFormSelects() { 
+  const depSelects = document.querySelectorAll('.dep-select-options'); 
+  depSelects.forEach(select => { 
+    select.innerHTML = ''; 
+    listaDependenciasColumnaA.forEach(dep => { 
+      const opt = document.createElement('option'); 
+      opt.value = dep; 
+      opt.textContent = dep; 
+      select.appendChild(opt); 
+    }); 
+  }); 
+  document.getElementById('f_imp_destino').value = "DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)"; 
+  document.getElementById('f_dec_destino').value = "DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)"; 
+  document.getElementById('f_proc_procedencia').value = "DIR. FUERZA BARRIAL DE APROX. (FBA)"; 
+  document.getElementById('f_dest_dirigida_a').value = "DIV. FUERZA BARRIAL DE APROX. III (FBA QUILMES)"; 
+  document.getElementById('f_den_destino').value = "DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)"; 
+  document.getElementById('f_cau_destino').value = "DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)"; 
+  document.getElementById('f_vic_destino').value = "DIV. FUERZA BARRIAL DE APROX. I (FBA LOMAS DE ZAMORA)"; 
 
-            document.getElementById('f_imp_destino').value = "DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)";
-            document.getElementById('f_dec_destino').value = "DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)";
-            document.getElementById('f_proc_procedencia').value = "DIR. FUERZA BARRIAL DE APROX. (FBA)";
-            document.getElementById('f_dest_dirigida_a').value = "DIV. FUERZA BARRIAL DE APROX. III (FBA QUILMES)";
-            document.getElementById('f_den_destino').value = "DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)";
-            document.getElementById('f_cau_destino').value = "DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)";
-            document.getElementById('f_vic_destino').value = "DIV. FUERZA BARRIAL DE APROX. I (FBA LOMAS DE ZAMORA)";
+  const cdSelect = document.getElementById('f_intervencion'); 
+  cdSelect.innerHTML = ''; 
+  listaControlDisciplinarioColumnaE.forEach(ctrl => { 
+    const opt = document.createElement('option'); 
+    opt.value = ctrl; 
+    opt.textContent = ctrl; 
+    cdSelect.appendChild(opt); 
+  }); 
+  cdSelect.value = "DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO"; 
+} 
 
-            const cdSelect = document.getElementById('f_intervencion');
-            cdSelect.innerHTML = '';
-            listaControlDisciplinarioColumnaE.forEach(ctrl => {
-                const opt = document.createElement('option');
-                opt.value = ctrl;
-                opt.textContent = ctrl;
-                cdSelect.appendChild(opt);
-            });
-            cdSelect.value = "DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO";
-        }
+function bindFormInputs() { 
+  document.querySelectorAll('#tab-carga_datos input, #tab-carga_datos select, #tab-carga_datos textarea').forEach(input => { 
+    input.addEventListener('input', updateStateFromInputs); 
+    input.addEventListener('change', updateStateFromInputs); 
+  }); 
+} 
 
-        function bindFormInputs() {
-            document.querySelectorAll('#tab-carga_datos input, #tab-carga_datos select, #tab-carga_datos textarea').forEach(input => {
-                input.addEventListener('input', updateStateFromInputs);
-                input.addEventListener('change', updateStateFromInputs);
-            });
-        }
+function getFechaNotaFormatted(bold = true) { 
+  const cd = appState.carga_datos; 
+  const dia = cd.f1_dia || '10'; 
+  const mes = (cd.f1_mes || 'abril').toLowerCase(); 
+  const anio = cd.f1_anio || '2026'; 
+  const str = `${dia} de ${mes} de ${anio}`; 
+  return bold ? `<b>${str}</b>` : str; 
+} 
 
-        function getFechaNotaFormatted(bold = true) {
-            const cd = appState.carga_datos;
-            const dia = cd.f1_dia || '10';
-            const mes = (cd.f1_mes || 'abril').toLowerCase();
-            const anio = cd.f1_anio || '2026';
-            const str = `${dia} de ${mes} de ${anio}`;
-            return bold ? `<b>${str}</b>` : str;
-        }
+function getFechaHechoFormatted(bold = true) { 
+  const cd = appState.carga_datos; 
+  const dia = cd.f_hecho_dia || '2'; 
+  const mes = (cd.f_hecho_mes || 'abril').toLowerCase(); 
+  const anio = cd.f_hecho_anio || '2026'; 
+  const str = `${dia} de ${mes} de ${anio}`; 
+  return bold ? `<b>${str}</b>` : str; 
+} 
 
-        function getFechaHechoFormatted(bold = true) {
-            const cd = appState.carga_datos;
-            const dia = cd.f_hecho_dia || '2';
-            const mes = (cd.f_hecho_mes || 'abril').toLowerCase();
-            const anio = cd.f_hecho_anio || '2026';
-            const str = `${dia} de ${mes} de ${anio}`;
-            return bold ? `<b>${str}</b>` : str;
-        }
+function getLugarFechaEncabezado(bold = true) { 
+  const partidoNota = appState.carga_datos.f_imp_partido || 'LA PLATA'; 
+  const fechaStr = getFechaNotaFormatted(bold); 
+  return `${partidoNota}, ${fechaStr}`; 
+} 
 
-        function getLugarFechaEncabezado(bold = true) {
-            const partidoNota = appState.carga_datos.f_imp_partido || 'LA PLATA';
-            const fechaStr = getFechaNotaFormatted(bold);
-            return `${partidoNota}, ${fechaStr}`;
-        }
+function formatPointText(rawText, htmlMode = true) { 
+  if (!rawText) return ''; 
+  const imputado = appState.carga_datos.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'; 
+  const victima = appState.carga_datos.f_vic_nombre || 'OFL 123123 VICTIMA DEL HECHO'; 
+  const fechaHecho = getFechaHechoFormatted(htmlMode); 
+  return rawText 
+    .replaceAll("OFL 123123 IMPUTADO DEL HECHO", imputado) 
+    .replaceAll("OFL 123123 VICTIMA DEL HECHO", victima) 
+    .replaceAll("10/abril/2026", fechaHecho); 
+} 
 
-        function formatPointText(rawText, htmlMode = true) {
-            if (!rawText) return '';
-            const imputado = appState.carga_datos.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO';
-            const victima = appState.carga_datos.f_vic_nombre || 'OFL 123123 VICTIMA DEL HECHO';
-            const fechaHecho = getFechaHechoFormatted(htmlMode);
-            return rawText
-                .replaceAll("OFL 123123 IMPUTADO DEL HECHO", imputado)
-                .replaceAll("OFL 123123 VICTIMA DEL HECHO", victima)
-                .replaceAll("10/abril/2026", fechaHecho);
-        }
+function updateStateFromInputs() { 
+  document.querySelectorAll('#tab-carga_datos input, #tab-carga_datos select, #tab-carga_datos textarea').forEach(input => { 
+    appState.carga_datos[input.id] = input.value; 
+    input.title = input.value; 
+  }); 
+  populateDropdownOptions(); 
+  renderSelectedPointsList(); 
+  renderNotePreview(appState.currentTab); 
+} 
 
-        function updateStateFromInputs() {
-            document.querySelectorAll('#tab-carga_datos input, #tab-carga_datos select, #tab-carga_datos textarea').forEach(input => {
-                appState.carga_datos[input.id] = input.value;
-                input.title = input.value;
-            });
-            populateDropdownOptions();
-            renderSelectedPointsList();
-            renderNotePreview(appState.currentTab);
-        }
+function populateDropdownOptions() { 
+  const select = document.getElementById('dropdown-options-select'); 
+  if (!select) return; 
+  const currentSelected = select.value; 
+  select.innerHTML = ''; 
+  listaOpcionesDesplegableRaw.forEach((rawText, index) => { 
+    const formattedTextOnly = formatPointText(rawText, false); 
+    const opt = document.createElement('option'); 
+    opt.value = index; 
+    opt.textContent = `${index + 1}. ${formattedTextOnly}`; 
+    select.appendChild(opt); 
+  }); 
+  if (currentSelected !== null && currentSelected !== undefined) { 
+    select.value = currentSelected; 
+  } 
+} 
 
-        function populateDropdownOptions() {
-            const select = document.getElementById('dropdown-options-select');
-            if (!select) return;
-            const currentSelected = select.value;
-            select.innerHTML = '';
-            listaOpcionesDesplegableRaw.forEach((rawText, index) => {
-                const formattedTextOnly = formatPointText(rawText, false);
-                const opt = document.createElement('option');
-                opt.value = index;
-                opt.textContent = `${index + 1}. ${formattedTextOnly}`;
-                select.appendChild(opt);
-            });
-            if (currentSelected !== null && currentSelected !== undefined) {
-                select.value = currentSelected;
-            }
-        }
+function addSelectedPoint() { 
+  const select = document.getElementById('dropdown-options-select'); 
+  const idx = parseInt(select.value, 10); 
+  if (!isNaN(idx) && !appState.puntosSeleccionadosIndices.includes(idx)) { 
+    appState.puntosSeleccionadosIndices.push(idx); 
+    renderSelectedPointsList(); 
+    renderNotePreview(appState.currentTab); 
+  } 
+} 
 
-        function addSelectedPoint() {
-            const select = document.getElementById('dropdown-options-select');
-            const idx = parseInt(select.value, 10);
-            if (!isNaN(idx) && !appState.puntosSeleccionadosIndices.includes(idx)) {
-                appState.puntosSeleccionadosIndices.push(idx);
-                renderSelectedPointsList();
-                renderNotePreview(appState.currentTab);
-            }
-        }
+function removePoint(indexInSelected) { 
+  appState.puntosSeleccionadosIndices.splice(indexInSelected, 1); 
+  renderSelectedPointsList(); 
+  renderNotePreview(appState.currentTab); 
+} 
 
-        function removePoint(indexInSelected) {
-            appState.puntosSeleccionadosIndices.splice(indexInSelected, 1);
-            renderSelectedPointsList();
-            renderNotePreview(appState.currentTab);
-        }
+function renderSelectedPointsList() { 
+  const listEl = document.getElementById('selected-points-list'); 
+  if (!listEl) return; 
+  listEl.innerHTML = ''; 
+  appState.puntosSeleccionadosIndices.forEach((rawIdx, listIdx) => { 
+    const rawText = listaOpcionesDesplegableRaw[rawIdx]; 
+    const formattedHtml = formatPointText(rawText, true); 
+    const li = document.createElement('li'); 
+    li.innerHTML = `<span><strong>${listIdx + 1}.</strong> ${formattedHtml}</span> <button class="btn btn-danger" onclick="removePoint(${listIdx})">❌ Quitar</button>`; 
+    listEl.appendChild(li); 
+  }); 
+} 
 
-        function renderSelectedPointsList() {
-            const listEl = document.getElementById('selected-points-list');
-            if (!listEl) return;
-            listEl.innerHTML = '';
-            appState.puntosSeleccionadosIndices.forEach((rawIdx, listIdx) => {
-                const rawText = listaOpcionesDesplegableRaw[rawIdx];
-                const formattedHtml = formatPointText(rawText, true);
-                const li = document.createElement('li');
-                li.innerHTML = `<span><strong>${listIdx + 1}.</strong> ${formattedHtml}</span> <button class="btn btn-danger" onclick="removePoint(${listIdx})">❌ Quitar</button>`;
-                listEl.appendChild(li);
-            });
-        }
+function switchTab(tabKey, element) { 
+  document.querySelectorAll('.nav-item-top').forEach(el => el.classList.remove('active')); 
+  if (element) element.classList.add('active'); 
+  appState.currentTab = tabKey; 
+  const pickerCard = document.getElementById('card-desplegable-picker'); 
+  pickerCard.style.display = (tabKey === 'col_div') ? 'block' : 'none'; 
+  renderNotePreview(tabKey); 
+} 
 
-        function switchTab(tabKey, element) {
-            document.querySelectorAll('.nav-item-top').forEach(el => el.classList.remove('active'));
-            if (element) element.classList.add('active');
-            appState.currentTab = tabKey;
-            const pickerCard = document.getElementById('card-desplegable-picker');
-            pickerCard.style.display = (tabKey === 'col_div') ? 'block' : 'none';
-            renderNotePreview(tabKey);
-        }
+function renderNotePreview(tabKey) { 
+  const container = document.getElementById('doc-preview-wrapper-container'); 
+  const cd = appState.carga_datos; 
+  const fechaHechoHtml = getFechaHechoFormatted(true); 
+  const lugarFechaEncabezadoHtml = getLugarFechaEncabezado(true); 
+  const logoHtml = `<div class="doc-header-logo"><img src="${LOGO_HEADER_BASE64}"></div>`; 
 
-        function renderNotePreview(tabKey) {
-            const container = document.getElementById('doc-preview-wrapper-container');
-            const cd = appState.carga_datos;
-            const fechaHechoHtml = getFechaHechoFormatted(true);
-            const lugarFechaEncabezadoHtml = getLugarFechaEncabezado(true);
-            const logoHtml = `<div class="doc-header-logo"><img src="${LOGO_HEADER_BASE64}"></div>`;
+  if (tabKey === 'caratula_doc') { 
+    container.innerHTML = ` 
+      <div class="a4-page caratula-page-fixed"> 
+        ${logoHtml} 
+        <div class="caratula-container-auto"> 
+          <div> 
+            <div class="caratula-title-main">ACTUACION SUMARIAL ADMINISTRATIVA</div> 
+            <div class="caratula-isa-box">${cd.f_caratula || '21100 - 082162/2026 - DN154527'}</div> 
+          </div> 
+          <div class="caratula-grid-auto"> 
+            <div class="caratula-row-item"> 
+              <div class="caratula-label">EXPEDIENTE ELECTRONICO:</div> 
+              <div class="caratula-value">${cd.f_exp_elec || 'EX-2026-16420475- -GDEBA-DDPRYGEMSGP'}</div> 
+            </div> 
+            <div class="caratula-row-item"> 
+              <div class="caratula-label">FECHA DEL HECHO:</div> 
+              <div class="caratula-value">${fechaHechoHtml}</div> 
+            </div> 
+            <div class="caratula-row-item"> 
+              <div class="caratula-label">CAUSANTE:</div> 
+              <div class="caratula-value">${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</div> 
+            </div> 
+            <div class="caratula-row-item"> 
+              <div class="caratula-label">DESTINO DEL CAUSANTE:</div> 
+              <div class="caratula-value">${cd.f_imp_destino || 'DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)'}</div> 
+            </div> 
+            <div class="caratula-row-item"> 
+              <div class="caratula-label">CTROL. DISCIPLINARIO INTERV.:</div> 
+              <div class="caratula-value">${cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</div> 
+            </div> 
+            <div class="caratula-row-item"> 
+              <div class="caratula-label">INSTRUCTOR:</div> 
+              <div class="caratula-value">${cd.f_proc_instructor || 'COMISARIO MAYOR (CDO.) HERNAN ABEL BIANDIN'}</div> 
+            </div> 
+            <div class="caratula-row-item"> 
+              <div class="caratula-label">SECRETARIO DE ACTUACION:</div> 
+              <div class="caratula-value">${cd.f_proc_secretario || 'OFICIAL SUBAYUDANTE (CDO.) FLORENCIA MILENA ZALAZAR'}</div> 
+            </div> 
+            <div class="caratula-row-item"> 
+              <div class="caratula-label">DEPENDENCIA INSTRUCTORA:</div> 
+              <div class="caratula-value">${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}</div> 
+            </div> 
+          </div> 
+        </div> 
+      </div>`; 
+    return; 
+  } 
 
-            if (tabKey === 'caratula_doc') {
-                container.innerHTML = `
-                <div class="a4-page caratula-page-fixed">
-                    ${logoHtml}
-                    <div class="caratula-container-auto">
-                        <div>
-                            <div class="caratula-title-main">ACTUACION SUMARIAL ADMINISTRATIVA</div>
-                            <div class="caratula-isa-box">${cd.f_caratula || '21100 - 082162/2026 - DN154527'}</div>
-                        </div>
-                        <div class="caratula-grid-auto">
-                            <div class="caratula-row-item">
-                                <div class="caratula-label">EXPEDIENTE ELECTRONICO:</div>
-                                <div class="caratula-value">${cd.f_exp_elec || 'EX-2026-16420475- -GDEBA-DDPRYGEMSGP'}</div>
-                            </div>
-                            <div class="caratula-row-item">
-                                <div class="caratula-label">FECHA DEL HECHO:</div>
-                                <div class="caratula-value">${fechaHechoHtml}</div>
-                            </div>
-                            <div class="caratula-row-item">
-                                <div class="caratula-label">CAUSANTE:</div>
-                                <div class="caratula-value">${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</div>
-                            </div>
-                            <div class="caratula-row-item">
-                                <div class="caratula-label">DESTINO DEL CAUSANTE:</div>
-                                <div class="caratula-value">${cd.f_imp_destino || 'DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)'}</div>
-                            </div>
-                            <div class="caratula-row-item">
-                                <div class="caratula-label">CTROL. DISCIPLINARIO INTERV.:</div>
-                                <div class="caratula-value">${cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</div>
-                            </div>
-                            <div class="caratula-row-item">
-                                <div class="caratula-label">INSTRUCTOR:</div>
-                                <div class="caratula-value">${cd.f_proc_instructor || 'COMISARIO MAYOR (CDO.) HERNAN ABEL BIANDIN'}</div>
-                            </div>
-                            <div class="caratula-row-item">
-                                <div class="caratula-label">SECRETARIO DE ACTUACION:</div>
-                                <div class="caratula-value">${cd.f_proc_secretario || 'OFICIAL SUBAYUDANTE (CDO.) FLORENCIA MILENA ZALAZAR'}</div>
-                            </div>
-                            <div class="caratula-row-item">
-                                <div class="caratula-label">DEPENDENCIA INSTRUCTORA:</div>
-                                <div class="caratula-value">${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-                return;
-            }
+  if (tabKey === 'dto_recepcion') { 
+    container.innerHTML = ` 
+      <div class="a4-page"> 
+        ${logoHtml} 
+        <div style="text-align: right; font-weight: bold; font-size: 11pt; margin-bottom: 0.3cm;"> 
+          Corresponde a expediente ${cd.f_caratula || '21100 - 082162/2026 - DN154527'} 
+        </div> 
+        <div style="font-weight: bold; font-size: 11pt; margin-bottom: 0.8cm;"> 
+          ${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}, a los ${cd.f1_dia || '10'} del mes de ${(cd.f1_mes || 'abril').toLowerCase()} de año ${cd.f1_anio || '2026'} 
+        </div> 
+        <div class="doc-body"> 
+          <p class="sangria-dto"> 
+            <strong>RECIBIDO:</strong> En la fecha, previo registro en los libros correspondientes y, atento a su contenido en el marco de <strong>expediente ${cd.f_caratula}</strong> en donde resulta denunciante: <strong>${cd.f_den_nombre || 'OFL 123123 DENUNCIANTE DEL HECHO'}</strong>, en la cual se analiza la conducta del <strong>${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</strong>, numeraria de la <strong>${cd.f_imp_destino}</strong>, en trámite ante la <strong>${cd.f_intervencion}</strong>, el suscripto <strong>${cd.f_proc_instructor}</strong>, en mis funciones inherentes como <strong>${cd.f_proc_funcion}</strong> de la <strong>${cd.f_proc_procedencia}</strong>, a párrafo seguido. 
+          </p> 
+          <p class="sangria-dto" style="font-size: 11pt; margin-bottom: 1.5em;">Por ello;</p> 
+          <div style="font-weight: bold; font-size: 11pt; margin-bottom: 1em;">RESUELVO:</div> 
+          <p class="sangria-dto">Designar como secretario de actuaciones a producirse al ${cd.f_proc_secretario} quién refrenda al pie a continuación para tener legal constancia de lo actuado.</p> 
+          <p class="sangria-dto">Dar estricto cumplimiento a todo lo solicitado.</p> 
+          <p class="sangria-dto">Cumplir con toda diligencia que sea de menester y/o surja de lo actuado.</p> 
+          <p class="sangria-dto">Cumplidas todas las diligencias requeridas por el ente y vuelva para su prosecución.</p> 
+          <div style="font-weight: bold; font-size: 11pt; margin-top: 2.5em; text-align: center;">CUMPLA EL ACTUARIO</div> 
+        </div> 
+      </div> 
+      <div class="a4-page page-break"> 
+        <div style="font-weight: bold; font-size: 11pt; margin-bottom: 1.5em; margin-top: 2cm;"> 
+          SEÑOR INSTRUCTOR: 
+        </div> 
+        <div class="sangria-dto" style="font-size: 11pt; margin-bottom: 1.5em;"> 
+          Tomo conocimiento y daré estricto cumplimiento a lo ordenado por usted. CONSTE. 
+        </div> 
+        <div style="font-weight: bold; font-size: 11pt;"> 
+          ${cd.f_proc_procedencia}, a los ${cd.f1_dia || '10'} del mes de ${(cd.f1_mes || 'abril').toLowerCase()} del año ${cd.f1_anio || '2026'} 
+        </div> 
+      </div>`; 
+    return; 
+  } 
 
-            if (tabKey === 'dto_recepcion') {
-                container.innerHTML = `
-                <div class="a4-page">
-                    ${logoHtml}
-                    <div style="text-align: right; font-weight: bold; font-size: 11pt; margin-bottom: 0.3cm;">
-                        Corresponde a expediente ${cd.f_caratula || '21100 - 082162/2026 - DN154527'}
-                    </div>
-                    <div style="font-weight: bold; font-size: 11pt; margin-bottom: 0.8cm;">
-                        ${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}, a los ${cd.f1_dia || '10'} del mes de ${(cd.f1_mes || 'abril').toLowerCase()} de año ${cd.f1_anio || '2026'}
-                    </div>
-                    <div class="doc-body">
-                        <p class="sangria-dto">
-                            <strong>RECIBIDO:</strong> En la fecha, previo registro en los libros correspondientes y, atento a su contenido en el marco de <strong>expediente ${cd.f_caratula}</strong> en donde resulta denunciante: <strong>${cd.f_den_nombre || 'OFL 123123 DENUNCIANTE DEL HECHO'}</strong>, en la cual se analiza la conducta del <strong>${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</strong>, numeraria de la <strong>${cd.f_imp_destino}</strong>, en trámite ante la <strong>${cd.f_intervencion}</strong>, el suscripto <strong>${cd.f_proc_instructor}</strong>, en mis funciones inherentes como <strong>${cd.f_proc_funcion}</strong> de la <strong>${cd.f_proc_procedencia}</strong>, a párrafo seguido.
-                        </p>
-                        <p class="sangria-dto" style="font-size: 11pt; margin-bottom: 1.5em;">Por ello;</p>
-                        <div style="font-weight: bold; font-size: 11pt; margin-bottom: 1em;">RESUELVO:</div>
-                        <p class="sangria-dto">Designar como secretario de actuaciones a producirse al ${cd.f_proc_secretario} quién refrenda al pie a continuación para tener legal constancia de lo actuado.</p>
-                        <p class="sangria-dto">Dar estricto cumplimiento a todo lo solicitado.</p>
-                        <p class="sangria-dto">Cumplir con toda diligencia que sea de menester y/o surja de lo actuado.</p>
-                        <p class="sangria-dto">Cumplidas todas las diligencias requeridas por el ente y vuelva para su prosecución.</p>
-                        <div style="font-weight: bold; font-size: 11pt; margin-top: 2.5em; text-align: center;">CUMPLA EL ACTUARIO</div>
-                    </div>
-                </div>
-                <div class="a4-page page-break">
-                    <div style="font-weight: bold; font-size: 11pt; margin-bottom: 1.5em; margin-top: 2cm;">
-                        SEÑOR INSTRUCTOR:
-                    </div>
-                    <div class="sangria-dto" style="font-size: 11pt; margin-bottom: 1.5em;">
-                        Tomo conocimiento y daré estricto cumplimiento a lo ordenado por usted. CONSTE.
-                    </div>
-                    <div style="font-weight: bold; font-size: 11pt;">
-                        ${cd.f_proc_procedencia}, a los ${cd.f1_dia || '10'} del mes de ${(cd.f1_mes || 'abril').toLowerCase()} del año ${cd.f1_anio || '2026'}
-                    </div>
-                </div>`;
-                return;
-            }
+  if (tabKey === 'decl_testimonial') { 
+    const textoCorridoDeclara = `En la localidad de <strong>${cd.f_proc_localidad || 'González Catán'}</strong>, partido de <strong>${cd.f_proc_partido || 'La Matanza'}</strong>, provincia de Buenos Aires, República Argentina, en el asiento físico de la <strong>${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}</strong>, sita en calle <strong>${cd.f_proc_dir_dependencia || 'San Matías (Ruta provincial 1001) sin número'}</strong>, entre calle <strong>${cd.f_proc_entre_calles || 'Achupallas y B. Llorente'}</strong> del mismo medio, a los <strong>${cd.f1_dia || '10'}</strong> días del mes de <strong>${(cd.f1_mes || 'abril').toLowerCase()}</strong> del año <strong>${cd.f1_anio || '2026'}</strong>, siendo las 16:58 horas, comparece ante el actuante y testigo de actuación, una persona previamente citada a los efectos de recibirle declaración Testimonial, a quien seguidamente se lo ENTERA Y NOTIFICA del contenido del Decreto Reglamentario 1050/09 de la Ley 13982; contenidos en el artículo 190 inc. “d”: “Son Faltas graves de competencia originaria de la Auditoría General de Asuntos Internos: las que dan lugar a sanción de exoneración, cesantía o suspensión del empleo sin goce de haberes de hasta sesenta (60) días, aplicables por resolución fundada en el marco de una investigación sumarial administrativa.”, y artículo 205 inciso “k” del mismo texto legal que reza: “Son faltas graves, que constituyen abuso funcional con intervención originaria de la Auditoría General de Asuntos Internos”, inciso “k”, que reza: “Afirmar una falsedad, negar o callar la verdad en todo o en parte, se relacione o no con actos del servicio, en las declaraciones, informes, diagnósticos, traducciones o interpretaciones que se presten como testigo, perito, intérprete del instructor o en cualquier otro carácter, cuando ello pudiera importar un perjuicio para terceros o para la administración de justicia, o en un proceso administrativo o actuación administrativa'. Asimismo, se lo pone en conocimiento del contenido del artículo 100 y 218 del Código Procesal Penal de la provincia de Buenos aires, que comprende y por ello bajo juramento o promesa de decir la verdad, manifiesta que se producirá en todo cuanto supiere, conociere y le fuera preguntado, de acuerdo con sus creencias o convicciones cívicas, con total veracidad, mediante la fórmula: “LO JURO”. Seguidamente se lo pone en conocimiento del contenido del artículo 275 y 276 del Código Penal de La Nación, donde se castiga el “Falso Testimonio”. Seguidamente conforme lo establecido en el artículo 240 del Código Procesal Penal de la Provincia de Buenos Aires, se le es preguntado por sus nombres, apellidos y demás circunstancias personales, manifestando ser y llamarse: <strong>${cd.f_dec_nombres || 'DECLARANTE'}</strong>, de <strong>${cd.f_dec_edad || '45'}</strong> años de edad, nacionalidad <strong>${cd.f_dec_nacionalidad || 'ARGENTINA'}</strong>, estado civil <strong>${cd.f_dec_estado_civil || 'SOLTERO'}</strong>, profesión u ocupación <strong>${cd.f_dec_profesion || 'EMPLEADO POLICIAL'}</strong>, instruido, domicilio en calle <strong>${cd.f_dec_domicilio || 'CALLE 1 N° 23'}</strong>, entre calle <strong>${cd.f_dec_entre_calles || 'CALLE 2 Y CALLE 3'}</strong> del mismo medio, Documento Nacional de Identidad Nº <strong>${cd.f_dec_dni || '45000123'}</strong>, que si exhibe, que si repite de memoria y que si retiene para sí en este acto. Acto seguido se le es preguntado para que exprese si se encuentra comprendido en lo tipificado en el Código Procesal Penal de la Provincia de Buenos Aires en artículo 234. 'prohibición de declarar', artículo 235. 'facultad de Abstención', por encontrarse comprendido en algún grado de parentesco y artículo 236. 'deber de Abstención' por su estado oficio o profesión del secreto profesional, manifiesta NO estar comprendido en las referidas prohibiciones, ni abstenciones. Que, preguntado para que diga si posee vínculo de parentesco o de interés con las mismas, como así también de cualquier otra circunstancia que sirva para apreciar su veracidad de sus dichos, manifiesta que NO. En consecuencia y acorde a lo normado en el artículo 101 del Código Procesal Penal de la provincia de Buenos Aires, seguidamente es invitado a manifestar respecto al hecho en cuestión por lo que seguidamente DECLARA: Que, resulta ser empleado de la Policía de la Provincia de Buenos Aires, ostentando en la actualidad la jerarquía de <strong>${cd.f_dec_jerarquia || 'OFICIAL'}</strong>, del escalafón <strong>${cd.f_dec_subescalafon || 'GENERAL'}</strong>, legajo personal N° <strong>${cd.f_dec_legajo || '123456'}</strong>, cumpliendo en la actualidad sus servicios en el <strong>${cd.f_dec_destino || 'DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)'}</strong>, como <strong>${cd.f_dec_funcion || 'DISPONIBLE'}</strong>. En la fecha, se hace presente a los fines de prestar declaración testimonial en <strong>${cd.f_caratula || '21100 - 082162/2026 - DN154527'}</strong>, donde se analiza la conducta del <strong>${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</strong>, en trámite ante <strong>${cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</strong>, incoadas el <strong>${fechaHechoHtml}</strong>. En esa inteligencia relata ${cd.f_dec_declara || ''}. Es todo cuanto declara al respecto. Por lo que no siendo para más el acto, previa e integra lectura que da por sí y no teniendo nada que quitar, tachar, corregir y/o enmendar, ratifica de todo su contenido, firmando al pie para constancia ante el suscripto que certifica todo lo actuado.`; 
+    
+    container.innerHTML = ` 
+      <div class="multi-page-container decl-testimonial-mode" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px;"> 
+        <div class="a4-page auto-flow-page"> 
+          ${logoHtml} 
+          <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 0.8cm; text-transform: uppercase;"> 
+            DECLARACIÓN TESTIMONIAL 
+          </div> 
+          <div class="doc-body"> 
+            <p class="sangria-cero" style="text-align: justify; margin: 0; line-height: 1.5;"> 
+              ${textoCorridoDeclara} 
+            </p> 
+          </div> 
+        </div> 
+      </div>`; 
+    return; 
+  } 
 
-            if (tabKey === 'decl_testimonial') {
-                const textoCorridoDeclara = `En la localidad de <strong>${cd.f_proc_localidad || 'González Catán'}</strong>, partido de <strong>${cd.f_proc_partido || 'La Matanza'}</strong>, provincia de Buenos Aires, República Argentina, en el asiento físico de la <strong>${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}</strong>, sita en calle <strong>${cd.f_proc_dir_dependencia || 'San Matías (Ruta provincial 1001) sin número'}</strong>, entre calle <strong>${cd.f_proc_entre_calles || 'Achupallas y B. Llorente'}</strong> del mismo medio, a los <strong>${cd.f1_dia || '10'}</strong> días del mes de <strong>${(cd.f1_mes || 'abril').toLowerCase()}</strong> del año <strong>${cd.f1_anio || '2026'}</strong>, siendo las 16:58 horas, comparece ante el actuante y testigo de actuación, una persona previamente citada a los efectos de recibirle declaración Testimonial, a quien seguidamente se lo ENTERA Y NOTIFICA del contenido del Decreto Reglamentario 1050/09 de la Ley 13982; contenidos en el artículo 190 inc. “d”: “Son Faltas graves de competencia originaria de la Auditoría General de Asuntos Internos: las que dan lugar a sanción de exoneración, cesantía o suspensión del empleo sin goce de haberes de hasta sesenta (60) días, aplicables por resolución fundada en el marco de una investigación sumarial administrativa.”, y artículo 205 inciso “k” del mismo texto legal que reza: “Son faltas graves, que constituyen abuso funcional con intervención originaria de la Auditoría General de Asuntos Internos”, inciso “k”, que reza: “Afirmar una falsedad, negar o callar la verdad en todo o en parte, se relacione o no con actos del servicio, en las declaraciones, informes, diagnósticos, traducciones o interpretaciones que se presten como testigo, perito, intérprete del instructor o en cualquier otro carácter, cuando ello pudiera importar un perjuicio para terceros o para la administración de justicia, o en un proceso administrativo o actuación administrativa'. Asimismo, se lo pone en conocimiento del contenido del artículo 100 y 218 del Código Procesal Penal de la provincia de Buenos aires, que comprende y por ello bajo juramento o promesa de decir la verdad, manifiesta que se producirá en todo cuanto supiere, conociere y le fuera preguntado, de acuerdo con sus creencias o convicciones cívicas, con total veracidad, mediante la fórmula: “LO JURO”. Seguidamente se lo pone en conocimiento del contenido del artículo 275 y 276 del Código Penal de La Nación, donde se castiga el “Falso Testimonio”. Seguidamente conforme lo established en el artículo 240 del Código Procesal Penal de la Provincia de Buenos Aires, se le es preguntado por sus nombres, apellidos y demás circunstancias personales, manifestando ser y llamarse: <strong>${cd.f_dec_nombres || 'DECLARANTE'}</strong>, de <strong>${cd.f_dec_edad || '45'}</strong> años de edad, nacionalidad <strong>${cd.f_dec_nacionalidad || 'ARGENTINA'}</strong>, estado civil <strong>${cd.f_dec_estado_civil || 'SOLTERO'}</strong>, profesión u ocupación <strong>${cd.f_dec_profesion || 'EMPLEADO POLICIAL'}</strong>, instruido, domicilio en calle <strong>${cd.f_dec_domicilio || 'CALLE 1 N° 23'}</strong>, entre calle <strong>${cd.f_dec_entre_calles || 'CALLE 2 Y CALLE 3'}</strong> del mismo medio, Documento Nacional de Identidad Nº <strong>${cd.f_dec_dni || '45000123'}</strong>, que si exhibe, que si repite de memoria y que si retiene para sí en este acto. Acto seguido se le es preguntado para que exprese si se encuentra comprendido en lo tipificado en el Código Procesal Penal de la Provincia de Buenos Aires en artículo 234. 'prohibición de declarar', artículo 235. 'facultad de Abstención', por encontrarse comprendido en algún grado de parentesco y artículo 236. 'deber de Abstención' por su estado oficio o profesión del secreto profesional, manifiesta NO estar comprendido en las referidas prohibiciones, ni abstenciones. Que, preguntado para que diga si posee vínculo de parentesco o de interés con las mismas, como así también de cualquier otra circunstancia que sirva para apreciar su veracidad de sus dichos, manifiesta que NO. En consecuencia y acorde a lo normado en el artículo 101 del Código Procesal Penal de la provincia de Buenos Aires, seguidamente es invitado a manifestar respecto al hecho en cuestión por lo que seguidamente DECLARA: Que, resulta ser empleado de la Policía de la Provincia de Buenos Aires, ostentando en la actualidad la jerarquía de <strong>${cd.f_dec_jerarquia || 'OFICIAL'}</strong>, del escalafón <strong>${cd.f_dec_subescalafon || 'GENERAL'}</strong>, legajo personal N° <strong>${cd.f_dec_legajo || '123456'}</strong>, cumpliendo en la actualidad sus servicios en el <strong>${cd.f_dec_destino || 'DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)'}</strong>, como <strong>${cd.f_dec_funcion || 'DISPONIBLE'}</strong>. En la fecha, se hace presente a los fines de prestar declaración testimonial en <strong>${cd.f_caratula || '21100 - 082162/2026 - DN154527'}</strong>, donde se analiza la conducta del <strong>${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</strong>, en trámite ante <strong>${cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</strong>, incoadas el <strong>${fechaHechoHtml}</strong>. En esa inteligencia relata ${cd.f_dec_declara || ''}. Es todo cuanto declara al respecto. Por lo que no siendo para más el acto, previa e integra lectura que da por sí y no teniendo nada que quitar, tachar, corregir y/o enmendar, ratifica de todo su contenido, firmando al pie para constancia ante el suscripto que certifica todo lo actuado.`;
+  let htmlContent = logoHtml; 
+  if (tabKey === 'col_div') { 
+    let listHtml = '<ol>'; 
+    appState.puntosSeleccionadosIndices.forEach(idx => { 
+      const raw = listaOpcionesDesplegableRaw[idx]; 
+      listHtml += `<li>${formatPointText(raw, true)}</li>`; 
+    }); 
+    listHtml += '</ol>'; 
+    htmlContent += ` 
+      <div class="doc-mid-section"> 
+        <div><strong>REF.:</strong> Star. colaboración</div> 
+        <div>${lugarFechaEncabezadoHtml}</div> 
+      </div> 
+      <div class="doc-addressee">AL SEÑOR JEFE<br>${cd.f_dest_dirigida_a}</div> 
+      <div class="doc-body"> 
+        <p class="sangria-estandar">Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.f_caratula} en trámite ante ${cd.f_intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:</p> 
+        ${listHtml} 
+        <p class="sangria-estandar">Lo expuesto es todo en cuanto solicito a usted.</p> 
+      </div>`; 
+  } else if (tabKey === 'col_existencia_ipp') { 
+    htmlContent += ` 
+      <div class="doc-mid-section"> 
+        <div><strong>REF.:</strong> Star. Informe existencia de IPP, estado de causa y temperamento adoptado</div> 
+        <div>${lugarFechaEncabezadoHtml}</div> 
+      </div> 
+      <div class="doc-addressee">AL SEÑOR AGENTE FISCAL<br>${cd.f_magistrado}<br>DEPARTAMENTO JUDICIAL ${cd.f_dpto_judicial}</div> 
+      <div class="doc-body"> 
+        <p class="sangria-estandar">Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.f_caratula} en trámite ante ${cd.f_intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:</p> 
+        <ol> 
+          <li>si existe registro de algún Proceso Penal en trámite donde resulte denunciado el ${cd.f_imp_nombre}, edad: ${cd.f_imp_edad}, Documento Nacional de Identidad N°: ${cd.f_imp_dni} en la víspera del ${fechaHechoHtml} o posteriores, en la arteria ${cd.f_lugar_hecho}, localidad de ${cd.f_localidad_hecho}, partido de ${cd.f_partido_hecho}.</li> 
+          <li>Asimismo solicito informe la existencia de denuncias de igual tenor con respecto a Infracción con la Ley 12569.</li> 
+        </ol> 
+        <p class="sangria-estandar">En caso de ser positivo solicito informe número de causa, carátula, estado actual de la misma y temperamento tomado para con el personal policial involucrado. Encarezco el resultado TÉRMINO MUY URGENTE en virtud fenecer los términos otorgados por la Superioridad y son vitales para la resolución administrativa del causante. Sirva adelantar el resultado a este mismo correo electrónico.</p> 
+        <p class="sangria-estandar">Lo expuesto es todo en cuanto solicito a usted.</p> 
+      </div>`; 
+  } else if (tabKey === 'star_existencia_cautelares') { 
+    htmlContent += ` 
+      <div class="doc-mid-section"> 
+        <div><strong>REF.:</strong> Pcir. Informe</div> 
+        <div>${lugarFechaEncabezadoHtml}</div> 
+      </div> 
+      <div class="doc-addressee">AL SEÑOR AGENTE FISCAL<br>${cd.f_magistrado}<br>DEPARTAMENTO JUDICIAL ${cd.f_dpto_judicial}</div> 
+      <div class="doc-body"> 
+        <p class="sangria-estandar">Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.f_caratula} en trámite ante ${cd.f_intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:</p> 
+        <ol> 
+          <li>si existe registro de algún Proceso Penal en trámite que tenga vinculación, donde resulte denunciado el ${cd.f_imp_nombre}, edad: ${cd.f_imp_edad}, Documento Nacional de Identidad N°: ${cd.f_imp_dni} en la víspera del ${fechaHechoHtml} o posteriores, en la arteria ${cd.f_lugar_hecho}, partido de ${cd.f_partido_hecho}.</li> 
+          <li>Asimismo solicito informe la existencia de denuncias de igual tenor con respecto a Infracción con la Ley 12569.</li> 
+        </ol> 
+        <p class="sangria-estandar">En caso de ser positivo solicito informe número de causa, carátula, estado actual de la misma y temperamento tomado para con el personal policial involucrado. Encarezco el resultado TÉRMINO MUY URGENTE en virtud fenecer los términos otorgados por la Superioridad y son vitales para la resolución administrativa del causante. Sirva adelantar el resultado a este mismo correo electrónico.</p> 
+        <p class="sangria-estandar">Lo expuesto es todo en cuanto solicito a usted.</p> 
+      </div>`; 
+  } else if (tabKey === 'col_cria_myf') { 
+    htmlContent += ` 
+      <div class="doc-mid-section"> 
+        <div><strong>REF.:</strong> Star. colaboración</div> 
+        <div>${lugarFechaEncabezadoHtml}</div> 
+      </div> 
+      <div class="doc-addressee">AL SEÑOR/A SUPERINTENDENTE/A<br>SUPERINTENDENCIA DE POLÍTICAS DE GÉNERO</div> 
+      <div class="doc-body"> 
+        <p class="sangria-cero"><strong>Nombre:</strong> ${cd.f_vic_nombre}</p> 
+        <p class="sangria-cero"><strong>Edad:</strong> ${cd.f_vic_edad}</p> 
+        <p class="sangria-cero"><strong>Documento Nacional de Identidad N°:</strong> ${cd.f_vic_dni}</p> 
+        <p class="sangria-cero"><strong>Domicilio en:</strong> ${cd.f_vic_domicilio}, localidad de ${cd.f_vic_localidad}, partido de ${cd.f_vic_partido}</p> 
+        <br> 
+        <p class="sangria-estandar">Que deberán ser comunicados en un plazo máximo de diez (10) días corridos, contados a partir del presente requerimiento, con copia a la Dirección Provincial de Políticas de Género y Derechos Humanos en los casos en que la PSVG/F sea personal policial.</p> 
+        <p class="sangria-estandar">Para mayor ilustración, se hace saber la síntesis del hecho descripto en la denuncia: ${cd.f_sintesis_hecho || 'No especificado'}</p> 
+        <p class="sangria-estandar">Asimismo Informe la existencia de denuncias anteriores con idéntica temática ante Comisaría MYF de jurisdicción. En caso de ser afirmativo aportar número de denuncia, número de Expediente GDEBA generado a raíz de cada uno de los hechos.</p> 
+        <p class="sangria-estandar">Lo expuesto es todo en cuanto solicito a usted.</p> 
+      </div>`; 
+  } else if (tabKey === 'star_inf_anmac_repar') { 
+    htmlContent += ` 
+      <div class="doc-mid-section"> 
+        <div><strong>REF.:</strong> Pcir. Informe</div> 
+        <div>${lugarFechaEncabezadoHtml}</div> 
+      </div> 
+      <div class="doc-addressee">AL SEÑOR DIRECTOR<br>REGISTRO PROVINCIAL DE ARMAS (R.E.P.A.R.)</div> 
+      <div class="doc-body"> 
+        <p class="sangria-estandar">Me dirijo a usted en el marco de las Actuaciones Sumariales Administrativas caratuladas <strong>${cd.f_caratula}</strong>, en trámite ante el <strong>${cd.f_intervencion}</strong>, a efectos de solicitarle tenga a bien informar si registra antecedentes el agente policial que a continuación se detalla:</p> 
+        <p class="sangria-cero"><strong>NOMBRES:</strong> ${cd.f_imp_nombre}</p> 
+        <p class="sangria-cero"><strong>DNI N°:</strong> ${cd.f_imp_dni}</p> 
+        <p class="sangria-cero"><strong>DOMICILIO:</strong> ${cd.f_imp_domicilio}, entre calles ${cd.f_imp_entre_calles}, localidad de ${cd.f_imp_localidad}, partido de ${cd.f_imp_partido}, TE: ${cd.f_imp_contacto}</p> 
+        <br> 
+        <p class="sangria-estandar">Lo expuesto es todo en cuanto solicito a usted.</p> 
+      </div>`; 
+  } else if (tabKey === 'star_lep') { 
+    htmlContent += ` 
+      <div class="doc-mid-section"> 
+        <div><strong>REF.:</strong> Star. Legajo Electronico Personal (LEP).</div> 
+        <div>${lugarFechaEncabezadoHtml}</div> 
+      </div> 
+      <div class="doc-addressee">AL SEÑOR DIRECTOR<br>DIRECCIÓN DE PERSONAL - REGÍMENES POLICIALES</div> 
+      <div class="doc-body"> 
+        <p class="sangria-estandar">Me dirijo a usted en el marco de las Actuaciones Sumariales Administrativas caratuladas <strong>${cd.f_caratula}</strong>, que se instruyen por ante el <strong>${cd.f_intervencion}</strong>, a efectos de solicitarle tenga a bien remitir copia del Legajo Electrónico Personal (L.E.P.) correspondiente a <strong>${cd.f_imp_nombre}</strong>.</p> 
+        <p class="sangria-estandar">Lo expuesto es todo en cuanto solicito a usted.</p> 
+      </div>`; 
+  } 
 
-                container.innerHTML = `
-                <div class="multi-page-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px;">
-                    <div class="a4-page auto-flow-page">
-                        ${logoHtml}
-                        <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 0.8cm; text-transform: uppercase;">
-                            DECLARACIÓN TESTIMONIAL
-                        </div>
-                        <div class="doc-body">
-                            <p class="sangria-cero" style="text-align: justify; margin: 0; line-height: 1.5;">
-                                ${textoCorridoDeclara}
-                            </p>
-                        </div>
-                    </div>
-                </div>`;
-                return;
-            }
+  container.innerHTML = `<div class="a4-page">${htmlContent}</div>`; 
+} 
 
-            let htmlContent = logoHtml;
+function createWordRunsFromHtml(htmlText) { 
+  const { TextRun } = window.docx; 
+  const runs = []; 
+  const parts = htmlText.split(/(<b>.*?<\/b>)/gi); 
+  parts.forEach(part => { 
+    if (!part) return; 
+    if (part.toLowerCase().startsWith('<b>') && part.toLowerCase().endsWith('</b>')) { 
+      const cleanText = part.replace(/<\/?b>/gi, ''); 
+      runs.push(new TextRun({ text: cleanText, bold: true, font: "Arial", size: 22 })); 
+    } else { 
+      runs.push(new TextRun({ text: part, font: "Arial", size: 22 })); 
+    } 
+  }); 
+  return runs; 
+} 
 
-            if (tabKey === 'col_div') {
-                let listHtml = '<ol>';
-                appState.puntosSeleccionadosIndices.forEach(idx => {
-                    const raw = listaOpcionesDesplegableRaw[idx];
-                    listHtml += `<li>${formatPointText(raw, true)}</li>`;
-                });
-                listHtml += '</ol>';
-                htmlContent += `
-                <div class="doc-mid-section">
-                    <div><strong>REF.:</strong> Star. colaboración</div>
-                    <div>${lugarFechaEncabezadoHtml}</div>
-                </div>
-                <div class="doc-addressee">AL SEÑOR JEFE<br>${cd.f_dest_dirigida_a}</div>
-                <div class="doc-body">
-                    <p class="sangria-estandar">Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.f_caratula} en trámite ante ${cd.f_intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:</p>
-                    ${listHtml}
-                    <p class="sangria-estandar">Lo expuesto es todo en cuanto solicito a usted.</p>
-                </div>`;
-            } else if (tabKey === 'col_existencia_ipp') {
-                htmlContent += `
-                <div class="doc-mid-section">
-                    <div><strong>REF.:</strong> Star. Informe existencia de IPP, estado de causa y temperamento adoptado</div>
-                    <div>${lugarFechaEncabezadoHtml}</div>
-                </div>
-                <div class="doc-addressee">AL SEÑOR AGENTE FISCAL<br>${cd.f_magistrado}<br>DEPARTAMENTO JUDICIAL ${cd.f_dpto_judicial}</div>
-                <div class="doc-body">
-                    <p class="sangria-estandar">Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.f_caratula} en trámite ante ${cd.f_intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:</p>
-                    <ol>
-                        <li>si existe registro de algún Proceso Penal en trámite donde resulte denunciado el ${cd.f_imp_nombre}, edad: ${cd.f_imp_edad}, Documento Nacional de Identidad N°: ${cd.f_imp_dni} en la víspera del ${fechaHechoHtml} o posteriores, en la arteria ${cd.f_lugar_hecho}, localidad de ${cd.f_localidad_hecho}, partido de ${cd.f_partido_hecho}.</li>
-                        <li>Asimismo solicito informe la existencia de denuncias de igual tenor con respecto a Infracción con la Ley 12569.</li>
-                    </ol>
-                    <p class="sangria-estandar">En caso de ser positivo solicito informe número de causa, carátula, estado actual de la misma y temperamento tomado para con el personal policial involucrado. Encarezco el resultado TÉRMINO MUY URGENTE en virtud fenecer los términos otorgados por la Superioridad y son vitales para la resolución administrativa del causante. Sirva adelantar el resultado a este mismo correo electrónico.</p>
-                    <p class="sangria-estandar">Lo expuesto es todo en cuanto solicito a usted.</p>
-                </div>`;
-            } else if (tabKey === 'star_existencia_cautelares') {
-                htmlContent += `
-                <div class="doc-mid-section">
-                    <div><strong>REF.:</strong> Pcir. Informe</div>
-                    <div>${lugarFechaEncabezadoHtml}</div>
-                </div>
-                <div class="doc-addressee">AL SEÑOR AGENTE FISCAL<br>${cd.f_magistrado}<br>DEPARTAMENTO JUDICIAL ${cd.f_dpto_judicial}</div>
-                <div class="doc-body">
-                    <p class="sangria-estandar">Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.f_caratula} en trámite ante ${cd.f_intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:</p>
-                    <ol>
-                        <li>si existe registro de algún Proceso Penal en trámite que tenga vinculación, donde resulte denunciado el ${cd.f_imp_nombre}, edad: ${cd.f_imp_edad}, Documento Nacional de Identidad N°: ${cd.f_imp_dni} en la víspera del ${fechaHechoHtml} o posteriores, en la arteria ${cd.f_lugar_hecho}, partido de ${cd.f_partido_hecho}.</li>
-                        <li>Asimismo solicito informe la existencia de denuncias de igual tenor con respecto a Infracción con la Ley 12569.</li>
-                    </ol>
-                    <p class="sangria-estandar">En caso de ser positivo solicito informe número de causa, carátula, estado actual de la misma y temperamento tomado para con el personal policial involucrado. Encarezco el resultado TÉRMINO MUY URGENTE en virtud fenecer los términos otorgados por la Superioridad y son vitales para la resolución administrativa del causante. Sirva adelantar el resultado a este mismo correo electrónico.</p>
-                    <p class="sangria-estandar">Lo expuesto es todo en cuanto solicito a usted.</p>
-                </div>`;
-            } else if (tabKey === 'col_cria_myf') {
-                htmlContent += `
-                <div class="doc-mid-section">
-                    <div><strong>REF.:</strong> Star. colaboración</div>
-                    <div>${lugarFechaEncabezadoHtml}</div>
-                </div>
-                <div class="doc-addressee">AL SEÑOR/A SUPERINTENDENTE/A<br>SUPERINTENDENCIA DE POLÍTICAS DE GÉNERO</div>
-                <div class="doc-body">
-                    <p class="sangria-cero"><strong>Nombre:</strong> ${cd.f_vic_nombre}</p>
-                    <p class="sangria-cero"><strong>Edad:</strong> ${cd.f_vic_edad}</p>
-                    <p class="sangria-cero"><strong>Documento Nacional de Identidad N°:</strong> ${cd.f_vic_dni}</p>
-                    <p class="sangria-cero"><strong>Domicilio en:</strong> ${cd.f_vic_domicilio}, localidad de ${cd.f_vic_localidad}, partido de ${cd.f_vic_partido}</p>
-                    <br>
-                    <p class="sangria-estandar">Que deberán ser comunicados en un plazo máximo de diez (10) días corridos, contados a partir del presente requerimiento, con copia a la Dirección Provincial de Políticas de Género y Derechos Humanos en los casos en que la PSVG/F sea personal policial.</p>
-                    <p class="sangria-estandar">Para mayor ilustración, se hace saber la síntesis del hecho descripto en la denuncia: ${cd.f_sintesis_hecho || 'No especificado'}</p>
-                    <p class="sangria-estandar">Asimismo Informe la existencia de denuncias anteriores con idéntica temática ante Comisaría MYF de jurisdicción. En caso de ser afirmativo aportar número de denuncia, número de Expediente GDEBA generado a raíz de cada uno de los hechos.</p>
-                    <p class="sangria-estandar">Lo expuesto es todo en cuanto solicito a usted.</p>
-                </div>`;
-            } else if (tabKey === 'star_inf_anmac_repar') {
-                htmlContent += `
-                <div class="doc-mid-section">
-                    <div><strong>REF.:</strong> Pcir. Informe</div>
-                    <div>${lugarFechaEncabezadoHtml}</div>
-                </div>
-                <div class="doc-addressee">AL SEÑOR DIRECTOR<br>REGISTRO PROVINCIAL DE ARMAS (R.E.P.A.R.)</div>
-                <div class="doc-body">
-                    <p class="sangria-estandar">Me dirijo a usted en el marco de las Actuaciones Sumariales Administrativas caratuladas <strong>${cd.f_caratula}</strong>, en trámite ante el <strong>${cd.f_intervencion}</strong>, a efectos de solicitarle tenga a bien informar si registra antecedentes el agente policial que a continuación se detalla:</p>
-                    <p class="sangria-cero"><strong>NOMBRES:</strong> ${cd.f_imp_nombre}</p>
-                    <p class="sangria-cero"><strong>DNI N°:</strong> ${cd.f_imp_dni}</p>
-                    <p class="sangria-cero"><strong>DOMICILIO:</strong> ${cd.f_imp_domicilio}, entre calles ${cd.f_imp_entre_calles}, localidad de ${cd.f_imp_localidad}, partido de ${cd.f_imp_partido}, TE: ${cd.f_imp_contacto}</p>
-                    <br>
-                    <p class="sangria-estandar">Lo expuesto es todo en cuanto solicito a usted.</p>
-                </div>`;
-            } else if (tabKey === 'star_lep') {
-                htmlContent += `
-                <div class="doc-mid-section">
-                    <div><strong>REF.:</strong> Star. Legajo Electronico Personal (LEP).</div>
-                    <div>${lugarFechaEncabezadoHtml}</div>
-                </div>
-                <div class="doc-addressee">AL SEÑOR DIRECTOR<br>DIRECCIÓN DE PERSONAL - REGÍMENES POLICIALES</div>
-                <div class="doc-body">
-                    <p class="sangria-estandar">Me dirijo a usted en el marco de las Actuaciones Sumariales Administrativas caratuladas <strong>${cd.f_caratula}</strong>, que se instruyen por ante el <strong>${cd.f_intervencion}</strong>, a efectos de solicitarle tenga a bien remitir copia del Legajo Electrónico Personal (L.E.P.) correspondiente a <strong>${cd.f_imp_nombre}</strong>.</p>
-                    <p class="sangria-estandar">Lo expuesto es todo en cuanto solicito a usted.</p>
-                </div>`;
-            }
+function downloadWordDocument() { 
+  if (!window.docx) { 
+    alert("Error: La librería 'docx' no se cargó correctamente."); 
+    return; 
+  } 
+  const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, Header } = window.docx; 
+  const cd = appState.carga_datos; 
+  const tabKey = appState.currentTab; 
 
-            container.innerHTML = `<div class="a4-page">${htmlContent}</div>`;
-        }
+  const topMarginTwips = Math.round(2.5 * 566.929); 
+  const topMarginParesTwips = Math.round(5.0 * 566.929); // 5cm para páginas pares
+  const bottomMarginTwips = Math.round(2.5 * 566.929); 
+  
+  // Márgenes simétricos
+  const leftMarginSimetricoTwips = Math.round(2.75 * 566.929); 
+  const rightMarginSimetricoTwips = Math.round(2.75 * 566.929); 
 
-        function createWordRunsFromHtml(htmlText) {
-            const { TextRun } = window.docx;
-            const runs = [];
-            const parts = htmlText.split(/(<b>.*?<\/b>)/gi);
-            parts.forEach(part => {
-                if (!part) return;
-                if (part.toLowerCase().startsWith('<b>') && part.toLowerCase().endsWith('</b>')) {
-                    const cleanText = part.replace(/<\/?b>/gi, '');
-                    runs.push(new TextRun({ text: cleanText, bold: true, font: "Arial", size: 22 }));
-                } else {
-                    runs.push(new TextRun({ text: part, font: "Arial", size: 22 }));
-                }
-            });
-            return runs;
-        }
+  const leftMarginTwips = Math.round(4.0 * 566.929); 
+  const rightMarginTwips = Math.round(1.5 * 566.929); 
 
-        function downloadWordDocument() {
-            if (!window.docx) {
-                alert("Error: La librería 'docx' no se cargó correctamente.");
-                return;
-            }
+  const mitadPaginaTwips = Math.round(6.5 * 566.929); 
+  const sangria125cmTwips = Math.round(1.25 * 566.929); 
 
-            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, Header, Footer } = window.docx;
-            const cd = appState.carga_datos;
-            const tabKey = appState.currentTab;
+  const noBorder = { 
+    top: { style: BorderStyle.NONE, size: 0, color: "auto" }, 
+    bottom: { style: BorderStyle.NONE, size: 0, color: "auto" }, 
+    left: { style: BorderStyle.NONE, size: 0, color: "auto" }, 
+    right: { style: BorderStyle.NONE, size: 0, color: "auto" }, 
+  }; 
 
-            const topMarginTwips = Math.round(2.5 * 566.929);
-            const bottomMarginTwips = Math.round(2.5 * 566.929);
-            const leftMarginTwips = Math.round(4.0 * 566.929);
-            const rightMarginTwips = Math.round(1.5 * 566.929);
-            const mitadPaginaTwips = Math.round(6.5 * 566.929);
-            const sangria125cmTwips = Math.round(1.25 * 566.929);
+  const sections = []; 
 
-            const noBorder = {
-                top: { style: BorderStyle.NONE, size: 0, color: "auto" },
-                bottom: { style: BorderStyle.NONE, size: 0, color: "auto" },
-                left: { style: BorderStyle.NONE, size: 0, color: "auto" },
-                right: { style: BorderStyle.NONE, size: 0, color: "auto" },
-            };
+  if (tabKey === 'caratula_doc') { 
+    const caratulaData = [ 
+      ["EXPEDIENTE ELECTRONICO:", cd.f_exp_elec || 'EX-2026-16420475- -GDEBA-DDPRYGEMSGP'], 
+      ["FECHA DEL HECHO:", getFechaHechoFormatted(false)], 
+      ["CAUSANTE:", cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'], 
+      ["DESTINO DEL CAUSANTE:", cd.f_imp_destino || 'DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)'], 
+      ["CTROL. DISCIPLINARIO INTERV.:", cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'], 
+      ["INSTRUCTOR:", cd.f_proc_instructor || 'COMISARIO MAYOR (CDO.) HERNAN ABEL BIANDIN'], 
+      ["SECRETARIO DE ACTUACION:", cd.f_proc_secretario || 'OFICIAL SUBAYUDANTE (CDO.) FLORENCIA MILENA ZALAZAR'], 
+      ["DEPENDENCIA INSTRUCTORA:", cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'] 
+    ]; 
+    const gridRows = caratulaData.map(([lbl, val]) => { 
+      return new TableRow({ 
+        children: [ 
+          new TableCell({ 
+            width: { size: 40, type: WidthType.PERCENTAGE }, 
+            borders: noBorder, 
+            children: [new Paragraph({ spacing: { before: 200, after: 200 }, children: [new TextRun({ text: lbl, bold: true, underline: {}, size: 22, font: "Arial" })] })] 
+          }), 
+          new TableCell({ 
+            width: { size: 60, type: WidthType.PERCENTAGE }, 
+            borders: noBorder, 
+            children: [new Paragraph({ spacing: { before: 200, after: 200 }, children: [new TextRun({ text: val, bold: true, size: 22, font: "Arial" })] })] 
+          }) 
+        ] 
+      }); 
+    }); 
+    sections.push({ 
+      properties: { 
+        page: { 
+          size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, 
+          margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips } 
+        } 
+      }, 
+      children: [ 
+        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 200, after: 400 }, children: [new TextRun({ text: "ACTUACION SUMARIAL ADMINISTRATIVA", bold: true, size: 30, font: "Arial" })] }), 
+        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ children: [new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 180, after: 180 }, children: [new TextRun({ text: `${cd.f_caratula || '21100 - 082162/2026 - DN154527'}`, bold: true, size: 28, font: "Arial" })] })] })] })] }), 
+        new Paragraph({ spacing: { after: 400 } }), 
+        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: gridRows }) 
+      ] 
+    }); 
+  } else if (tabKey === 'decl_testimonial') { 
+    const fechaHechoHtml = getFechaHechoFormatted(true); 
+    const textoCorridoDeclara = `En la localidad de <b>${cd.f_proc_localidad || 'González Catán'}</b>, partido de <b>${cd.f_proc_partido || 'La Matanza'}</b>, provincia de Buenos Aires, República Argentina, en el asiento físico de la <b>${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}</b>, sita en calle <b>${cd.f_proc_dir_dependencia || 'San Matías (Ruta provincial 1001) sin número'}</b>, entre calle <b>${cd.f_proc_entre_calles || 'Achupallas y B. Llorente'}</b> del mismo medio, a los <b>${cd.f1_dia || '10'}</b> días del mes de <b>${(cd.f1_mes || 'abril').toLowerCase()}</b> del año <b>${cd.f1_anio || '2026'}</b>, siendo las 16:58 horas, comparece ante el actuante y testigo de actuación, una persona previamente citada a los efectos de recibirle declaración Testimonial, a quien seguidamente se lo ENTERA Y NOTIFICA del contenido del Decreto Reglamentario 1050/09 de la Ley 13982; contenidos en el artículo 190 inc. “d”: “Son Faltas graves de competencia originaria de la Auditoría General de Asuntos Internos: las que dan lugar a sanción de exoneración, cesantía o suspensión del empleo sin goce de haberes de hasta sesenta (60) días, aplicables por resolución fundada en el marco de una investigación sumarial administrativa.”, y artículo 205 inciso “k” del mismo texto legal que reza: “Son faltas graves, que constituyen abuso funcional con intervención originaria de la Auditoría General de Asuntos Internos”, inciso “k”, que reza: “Afirmar una falsedad, negar o callar la verdad en todo o en parte, se relacione o no con actos del servicio, en las declaraciones, informes, diagnósticos, traducciones o interpretaciones que se presten como testigo, perito, intérprete del instructor o en cualquier otro carácter, cuando ello pudiera importar un perjuicio para terceros o para la administración de justicia, o en un proceso administrativo o actuación administrativa'. Asimismo, se lo pone en conocimiento del contenido del artículo 100 y 218 del Código Procesal Penal de la provincia de Buenos aires, que comprende y por ello bajo juramento o promesa de decir la verdad, manifiesta que se producirá en todo cuanto supiere, conociere y le fuera preguntado, de acuerdo con sus creencias o convicciones cívicas, con total veracidad, mediante la fórmula: “LO JURO”. Seguidamente se lo pone en conocimiento del contenido del artículo 275 y 276 del Código Penal de La Nación, donde se castiga el “Falso Testimonio”. Seguidamente conforme lo established en el artículo 240 del Código Procesal Penal de la Provincia de Buenos Aires, se le es preguntado por sus nombres, apellidos y demás circunstancias personales, manifestando ser y llamarse: <b>${cd.f_dec_nombres || 'DECLARANTE'}</b>, de <b>${cd.f_dec_edad || '45'}</b> años de edad, nacionalidad <b>${cd.f_dec_nacionalidad || 'ARGENTINA'}</b>, estado civil <b>${cd.f_dec_estado_civil || 'SOLTERO'}</b>, profesión u ocupación <b>${cd.f_dec_profesion || 'EMPLEADO POLICIAL'}</b>, instruido, domicilio en calle <b>${cd.f_dec_domicilio || 'CALLE 1 N° 23'}</b>, entre calle <b>${cd.f_dec_entre_calles || 'CALLE 2 Y CALLE 3'}</b> del mismo medio, Documento Nacional de Identidad Nº <b>${cd.f_dec_dni || '45000123'}</b>, que si exhibe, que si repite de memoria y que si retiene para sí en este acto. Acto seguido se le es preguntado para que exprese si se encuentra comprendido en lo tipificado en el Código Procesal Penal de la Provincia de Buenos Aires en artículo 234. 'prohibición de declarar', artículo 235. 'facultad de Abstención', por encontrarse comprendido en algún grado de parentesco y artículo 236. 'deber de Abstención' por su estado oficio o profesión del secreto profesional, manifiesta NO estar comprendido en las referidas prohibiciones, ni abstenciones. Que, preguntado para que diga si posee vínculo de parentesco o de interés con las mismas, como así también de cualquier otra circunstancia que sirva para apreciar su veracidad de sus dichos, manifiesta que NO. En consecuencia y acorde a lo normado en el artículo 101 del Código Procesal Penal de la provincia de Buenos Aires, seguidamente es invitado a manifestar respecto al hecho en cuestión por lo que seguidamente DECLARA: Que, resulta ser empleado de la Policía de la Provincia de Buenos Aires, ostentando en la actualidad la jerarquía de <b>${cd.f_dec_jerarquia || 'OFICIAL'}</b>, del escalafón <b>${cd.f_dec_subescalafon || 'GENERAL'}</b>, legajo personal N° <b>${cd.f_dec_legajo || '123456'}</b>, cumpliendo en la actualidad sus servicios en el <b>${cd.f_dec_destino || 'DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)'}</b>, como <b>${cd.f_dec_funcion || 'DISPONIBLE'}</b>. En la fecha, se hace presente a los fines de prestar declaración testimonial en <b>${cd.f_caratula || '21100 - 082162/2026 - DN154527'}</b>, donde se analiza la conducta del <b>${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</b>, en trámite ante <b>${cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</b>, incoadas el <b>${fechaHechoHtml}</b>. En esa inteligencia relata ${cd.f_dec_declara || ''}. Es todo cuanto declara al respecto. Por lo que no siendo para más el acto, previa e integra lectura que da por sí y no teniendo nada que quitar, tachar, corregir y/o enmendar, ratifica de todo su contenido, firmando al pie para constancia ante el suscripto que certifica todo lo actuado.`; 
 
-            const sections = [];
+    sections.push({ 
+      properties: { 
+        page: { 
+          size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, 
+          margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginSimetricoTwips, right: rightMarginSimetricoTwips }, 
+          differentFirstPageHeaderFooter: true 
+        } 
+      }, 
+      headers: { 
+        first: new Header({ children: [new Paragraph({ children: [new TextRun({ text: "MINISTERIO DE SEGURIDAD - GOBIERNO DE LA PROVINCIA DE BUENOS AIRES", bold: true, size: 18, color: "0284c7", font: "Arial" })] })] }), 
+        default: new Header({ children: [new Paragraph({ children: [new TextRun({ text: "MINISTERIO DE SEGURIDAD - GOBIERNO DE LA PROVINCIA DE BUENOS AIRES", bold: true, size: 18, color: "0284c7", font: "Arial" })] })] }), 
+        even: new Header({ children: [new Paragraph({ children: [] })] }) 
+      }, 
+      children: [ 
+        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 200, after: 400 }, children: [new TextRun({ text: "DECLARACIÓN TESTIMONIAL", bold: true, size: 28, font: "Arial" })] }), 
+        new Paragraph({ alignment: AlignmentType.JUSTIFY, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(textoCorridoDeclara) }) 
+      ] 
+    }); 
+  } else { 
+    const lugarFechaHeaderWord = getLugarFechaEncabezado(true); 
+    const mainPars = [ 
+      new Paragraph({ alignment: AlignmentType.LEFT, indent: { left: mitadPaginaTwips }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(lugarFechaHeaderWord) }) 
+    ]; 
 
-            if (tabKey === 'caratula_doc') {
-                const caratulaData = [
-                    ["EXPEDIENTE ELECTRONICO:", cd.f_exp_elec || 'EX-2026-16420475- -GDEBA-DDPRYGEMSGP'],
-                    ["FECHA DEL HECHO:", getFechaHechoFormatted(false)],
-                    ["CAUSANTE:", cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'],
-                    ["DESTINO DEL CAUSANTE:", cd.f_imp_destino || 'DIV. FUERZA BARRIAL DE APROX. II (FBA ALMIRANTE BROWN)'],
-                    ["CTROL. DISCIPLINARIO INTERV.:", cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'],
-                    ["INSTRUCTOR:", cd.f_proc_instructor || 'COMISARIO MAYOR (CDO.) HERNAN ABEL BIANDIN'],
-                    ["SECRETARIO DE ACTUACION:", cd.f_proc_secretario || 'OFICIAL SUBAYUDANTE (CDO.) FLORENCIA MILENA ZALAZAR'],
-                    ["DEPENDENCIA INSTRUCTORA:", cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)']
-                ];
+    if (tabKey === 'col_div') { 
+      mainPars.push(new Paragraph({ spacing: { line: 360, after: 300 }, children: [new TextRun({ text: `AL SEÑOR JEFE\n${cd.f_dest_dirigida_a}`, bold: true, font: "Arial", size: 22 })] })); 
+      mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(`Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.f_caratula} en trámite ante ${cd.f_intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:`) })); 
+      appState.puntosSeleccionadosIndices.forEach((rawIdx, listIdx) => { 
+        const raw = listaOpcionesDesplegableRaw[rawIdx]; 
+        const pointFormattedHtml = `${listIdx + 1}. ${formatPointText(raw, true)}`; 
+        mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: createWordRunsFromHtml(pointFormattedHtml) })); 
+      }); 
+      mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, before: 200, after: 300 }, children: [new TextRun({ text: "Lo expuesto es todo en cuanto solicito a usted.", font: "Arial", size: 22 })] })); 
+    } else { 
+      const pageNodes = document.querySelectorAll('#a4-preview .doc-body p'); 
+      if (pageNodes.length > 0) { 
+        pageNodes.forEach(pNode => { 
+          mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(pNode.innerHTML) })); 
+        }); 
+      } else { 
+        const plainText = document.querySelector('#a4-preview .doc-body')?.innerText || ""; 
+        mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, after: 200 }, children: [new TextRun({ text: plainText, font: "Arial", size: 22 })] })); 
+      } 
+    } 
 
-                const gridRows = caratulaData.map(([lbl, val]) => {
-                    return new TableRow({
-                        children: [
-                            new TableCell({
-                                width: { size: 40, type: WidthType.PERCENTAGE },
-                                borders: noBorder,
-                                children: [new Paragraph({ spacing: { before: 200, after: 200 }, children: [new TextRun({ text: lbl, bold: true, underline: {}, size: 22, font: "Arial" })] })]
-                            }),
-                            new TableCell({
-                                width: { size: 60, type: WidthType.PERCENTAGE },
-                                borders: noBorder,
-                                children: [new Paragraph({ spacing: { before: 200, after: 200 }, children: [new TextRun({ text: val, bold: true, size: 22, font: "Arial" })] })]
-                            })
-                        ]
-                    });
-                });
+    sections.push({ 
+      properties: { 
+        page: { 
+          size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) }, 
+          margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips } 
+        } 
+      }, 
+      children: mainPars 
+    }); 
+  } 
 
-                sections.push({
-                    properties: {
-                        page: {
-                            size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) },
-                            margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips }
-                        }
-                    },
-                    children: [
-                        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 200, after: 400 }, children: [new TextRun({ text: "ACTUACION SUMARIAL ADMINISTRATIVA", bold: true, size: 30, font: "Arial" })] }),
-                        new Table({
-                            width: { size: 100, type: WidthType.PERCENTAGE },
-                            rows: [new TableRow({
-                                children: [new TableCell({
-                                    children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 180, after: 180 }, children: [new TextRun({ text: `${cd.f_caratula || '21100 - 082162/2026 - DN154527'}`, bold: true, size: 28, font: "Arial" })] })]
-                                })]
-                            })]
-                        }),
-                        new Paragraph({ spacing: { after: 400 } }),
-                        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: gridRows })
-                    ]
-                });
-            } else if (tabKey === 'decl_testimonial') {
-                const fechaHechoHtml = getFechaHechoFormatted(true);
-                const textoCorridoDeclara = `En la localidad de <b>${cd.f_proc_localidad || 'González Catán'}</b>, partido de <b>${cd.f_proc_partido || 'La Matanza'}</b>, provincia de Buenos Aires, República Argentina, en el asiento físico de la <b>${cd.f_proc_procedencia || 'DIR. FUERZA BARRIAL DE APROX. (FBA)'}</b>, sita en calle <b>${cd.f_proc_dir_dependencia || 'San Matías (Ruta provincial 1001) sin número'}</b>, entre calle <b>${cd.f_proc_entre_calles || 'Achupallas y B. Llorente'}</b> del mismo medio, a los <b>${cd.f1_dia || '10'}</b> días del mes de <b>${(cd.f1_mes || 'abril').toLowerCase()}</b> del año <b>${cd.f1_anio || '2026'}</b>, siendo las 16:58 horas, comparece ante el actuante y testigo de actuación, una persona previamente citada a los efectos de recibirle declaración Testimonial, a quien seguidamente se lo ENTERA Y NOTIFICA del contenido del Decreto Reglamentario 1050/09 de la Ley 13982; contenidos en el artículo 190 inc. “d”: “Son Faltas graves de competencia originaria de la Auditoría General de Asuntos Internos: las que dan lugar a sanción de exoneración, cesantía o suspensión del empleo sin goce de haberes de hasta sesenta (60) días, aplicables por resolución fundada en el marco de una investigación sumarial administrativa.”, y artículo 205 inciso “k” del mismo texto legal que reza: “Son faltas graves, que constituyen abuso funcional con intervención originaria de la Auditoría General de Asuntos Internos”, inciso “k”, que reza: “Afirmar una falsedad, negar o callar la verdad en todo o en parte, se relacione o no con actos del servicio, en las declaraciones, informes, diagnósticos, traducciones o interpretaciones que se presten como testigo, perito, intérprete del instructor o en cualquier otro carácter, cuando ello pudiera importar un perjuicio para terceros o para la administración de justicia, o en un proceso administrativo o actuación administrativa'. Asimismo, se lo pone en conocimiento del contenido del artículo 100 y 218 del Código Procesal Penal de la provincia de Buenos aires, que comprende y por ello bajo juramento o promesa de decir la verdad, manifiesta que se producirá en todo cuanto supiere, conociere y le fuera preguntado, de acuerdo con sus creencias o convicciones cívicas, with total veracidad, mediante la fórmula: “LO JURO”. Seguidamente se lo pone en conocimiento del contenido del artículo 275 y 276 del Código Penal de La Nación, donde se castiga el “Falso Testimonio”. Seguidamente conforme lo establecido en el artículo 240 del Código Procesal Penal de la Provincia de Buenos Aires, se le es preguntado por sus nombres, apellidos y demás circunstancias personales, manifestando ser y llamarse: <b>${cd.f_dec_nombres || 'DECLARANTE'}</b>, de <b>${cd.f_dec_edad || '45'}</b> años de edad, nacionalidad <b>${cd.f_dec_nacionalidad || 'ARGENTINA'}</b>, estado civil <b>${cd.f_dec_estado_civil || 'SOLTERO'}</b>, profesión u ocupación <b>${cd.f_dec_profesion || 'EMPLEADO POLICIAL'}</b>, instruido, domicilio en calle <b>${cd.f_dec_domicilio || 'CALLE 1 N° 23'}</b>, entre calle <b>${cd.f_dec_entre_calles || 'CALLE 2 Y CALLE 3'}</b> del mismo medio, Documento Nacional de Identidad Nº <b>${cd.f_dec_dni || '45000123'}</b>, que si exhibe, que si repite de memoria y que si retiene para sí en este acto. Acto seguido se le es preguntado para que exprese si se encuentra comprendido en lo tipificado en el Código Procesal Penal de la Provincia de Buenos Aires en artículo 234. 'prohibición de declarar', artículo 235. 'facultad de Abstención', por encontrarse comprendido en algún grado de parentesco y artículo 236. 'deber de Abstención' por su estado oficio o profesión del secreto profesional, manifiesta NO estar comprendido en las referidas prohibiciones, ni abstenciones. Que, preguntado para que diga si posee vínculo de parentesco o de interés con las mismas, como así también de cualquier otra circunstancia que sirva para apreciar su veracidad de sus dichos, manifiesta que NO. En consecuencia y acorde a lo normado en el artículo 101 del Código Procesal Penal de la provincia de Buenos Aires, seguidamente es invitado a manifestar respecto al hecho en cuestión por lo que seguidamente DECLARA: Que, resulta ser empleado de la Policía de la Provincia de Buenos Aires, ostentando en la actualidad la jerarquía de <b>${cd.f_dec_jerarquia || 'OFICIAL'}</b>, del escalafón <b>${cd.f_dec_subescalafon || 'GENERAL'}</b>, legajo personal N° <b>${cd.f_dec_legajo || '123456'}</b>, cumpliendo en la actualidad sus servicios en el <b>${cd.f_dec_destino || 'DIV. FUERZA BARRIAL DE APROX. IX (FBA ESCOBAR)'}</b>, como <b>${cd.f_dec_funcion || 'DISPONIBLE'}</b>. En la fecha, se hace presente a los fines de prestar declaración testimonial en <b>${cd.f_caratula || '21100 - 082162/2026 - DN154527'}</b>, donde se analiza la conducta del <b>${cd.f_imp_nombre || 'OFL 123123 IMPUTADO DEL HECHO'}</b>, en trámite ante <b>${cd.f_intervencion || 'DEPARTAMENTO DE COORDINACION Y CONTROL DISCIPLINARIO'}</b>, incoadas el <b>${fechaHechoHtml}</b>. En esa inteligencia relata ${cd.f_dec_declara || ''}. Es todo cuanto declara al respecto. Por lo que no siendo para más el acto, previa e integra lectura que da por sí y no teniendo nada que quitar, tachar, corregir y/o enmendar, ratifica de todo su contenido, firmando al pie para constancia ante el suscripto que certifica todo lo actuado.`;
+  const doc = new Document({ 
+    styles: { default: { document: { run: { font: "Arial", size: 22 } } } }, 
+    sections 
+  }); 
 
-                sections.push({
-                    properties: {
-                        page: {
-                            size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) },
-                            margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips },
-                            differentFirstPageHeaderFooter: true
-                        }
-                    },
-                    headers: {
-                        first: new Header({
-                            children: [new Paragraph({ children: [new TextRun({ text: "MINISTERIO DE SEGURIDAD - GOBIERNO DE LA PROVINCIA DE BUENOS AIRES", bold: true, size: 18, color: "0284c7", font: "Arial" })] })]
-                        }),
-                        default: new Header({
-                            children: [new Paragraph({ children: [new TextRun({ text: "MINISTERIO DE SEGURIDAD - GOBIERNO DE LA PROVINCIA DE BUENOS AIRES", bold: true, size: 18, color: "0284c7", font: "Arial" })] })]
-                        }),
-                        even: new Header({
-                            children: [new Paragraph({ children: [] })]
-                        })
-                    },
-                    children: [
-                        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 200, after: 400 }, children: [new TextRun({ text: "DECLARACIÓN TESTIMONIAL", bold: true, size: 28, font: "Arial" })] }),
-                        new Paragraph({ alignment: AlignmentType.JUSTIFY, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(textoCorridoDeclara) })
-                    ]
-                });
-            } else {
-                const lugarFechaHeaderWord = getLugarFechaEncabezado(true);
-                const mainPars = [
-                    new Paragraph({
-                        alignment: AlignmentType.LEFT,
-                        indent: { left: mitadPaginaTwips },
-                        spacing: { line: 360, after: 200 },
-                        children: createWordRunsFromHtml(lugarFechaHeaderWord)
-                    })
-                ];
-
-                if (tabKey === 'col_div') {
-                    mainPars.push(new Paragraph({ spacing: { line: 360, after: 300 }, children: [new TextRun({ text: `AL SEÑOR JEFE\n${cd.f_dest_dirigida_a}`, bold: true, font: "Arial", size: 22 })] }));
-                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, after: 200 }, children: createWordRunsFromHtml(`Me dirijo a usted, a fin de solicitarle en el marco de Actuaciones Sumariales Administrativas en el marco de Expediente ${cd.f_caratula} en trámite ante ${cd.f_intervencion}, quiera tener a bien y ante quien corresponda realice las siguientes diligencias que se detallan más abajo:`) }));
-                    
-                    appState.puntosSeleccionadosIndices.forEach((rawIdx, listIdx) => {
-                        const raw = listaOpcionesDesplegableRaw[rawIdx];
-                        const pointFormattedHtml = `${listIdx + 1}. ${formatPointText(raw, true)}`;
-                        mainPars.push(new Paragraph({ indent: { left: Math.round(1.0 * 566.929) }, spacing: { line: 360, after: 120 }, children: createWordRunsFromHtml(pointFormattedHtml) }));
-                    });
-
-                    mainPars.push(new Paragraph({ alignment: AlignmentType.JUSTIFY, indent: { firstLine: sangria125cmTwips }, spacing: { line: 360, before: 200, after: 300 }, children: [new TextRun({ text: "Lo expuesto es todo en cuanto solicito a usted.", font: "Arial", size: 22 })] }));
-                } else {
-                    const pageNodes = document.querySelectorAll('#a4-preview .doc-body p');
-                    if (pageNodes.length > 0) {
-                        pageNodes.forEach(pNode => {
-                            mainPars.push(new Paragraph({
-                                alignment: AlignmentType.JUSTIFY,
-                                indent: { firstLine: sangria125cmTwips },
-                                spacing: { line: 360, after: 200 },
-                                children: createWordRunsFromHtml(pNode.innerHTML)
-                            }));
-                        });
-                    } else {
-                        const plainText = document.querySelector('#a4-preview .doc-body')?.innerText || "";
-                        mainPars.push(new Paragraph({
-                            alignment: AlignmentType.JUSTIFY,
-                            indent: { firstLine: sangria125cmTwips },
-                            spacing: { line: 360, after: 200 },
-                            children: [new TextRun({ text: plainText, font: "Arial", size: 22 })]
-                        }));
-                    }
-                }
-
-                sections.push({
-                    properties: {
-                        page: {
-                            size: { width: Math.round(21.0 * 566.929), height: Math.round(29.7 * 566.929) },
-                            margin: { top: topMarginTwips, bottom: bottomMarginTwips, left: leftMarginTwips, right: rightMarginTwips }
-                        }
-                    },
-                    children: mainPars
-                });
-            }
-
-            const doc = new Document({
-                styles: { default: { document: { run: { font: "Arial", size: 22 } } } },
-                sections
-            });
-
-            Packer.toBlob(doc).then(blob => {
-                saveAs(blob, `NOTA_${tabKey.toUpperCase()}.docx`);
-            }).catch(err => {
-                console.error(err);
-                alert("Error al generar el archivo Word: " + err.message);
-            });
-        }
-    </script>
-</body>
+  Packer.toBlob(doc).then(blob => { 
+    saveAs(blob, `NOTA_${tabKey.toUpperCase()}.docx`); 
+  }).catch(err => { 
+    console.error(err); 
+    alert("Error al generar el archivo Word: " + err.message); 
+  }); 
+} 
+</script> 
+</body> 
 </html>
